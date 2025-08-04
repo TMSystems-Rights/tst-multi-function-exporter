@@ -1,21 +1,21 @@
 {
-	"name": "tst-tab-exporter",
+	"name": "tst-multi-function-exporter",
 	"version": "1.0.0",
-	"description": "tst-tab-exporter用ワークスペース",
+	"description": "Firefox拡張「TST 多機能エクスポーター」用ワークスペース",
 	"main": "index.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/TMSystems-Rights/tst-tab-exporter.git"
+		"url": "git+https://github.com/TMSystems-Rights/tst-multi-function-exporter.git"
 	},
 	"author": "",
 	"license": "ISC",
 	"bugs": {
-		"url": "https://github.com/TMSystems-Rights/tst-tab-exporter/issues"
+		"url": "https://github.com/TMSystems-Rights/tst-multi-function-exporter/issues"
 	},
-	"homepage": "https://github.com/TMSystems-Rights/tst-tab-exporter#readme",
+	"homepage": "https://github.com/TMSystems-Rights/tst-multi-function-exporter#readme",
 	"devDependencies": {
 		"@eslint/js": "^9.31.0",
 		"eslint": "^9.31.0",

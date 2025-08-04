@@ -1,14 +1,11 @@
 {
-	"manifest_version": 2,
+	"manifest_version": 3,
 	"name": "__MSG_extName__",
-	"version": "1.0.0",
+	"version": "2.0.0",
 	"description": "__MSG_extDescription__",
+	"author": "TMSystems",
+	"homepage_url": "https://github.com/TMSystems-Rights/tst-tab-exporter",
 	"default_locale": "ja",
-	"applications": {
-		"gecko": {
-			"id": "tst-tab-exporter@tm-systems.jp"
-		}
-	},
 	"permissions": [
 		"tabs",
 		"downloads",
@@ -21,17 +18,26 @@
 			"background/background.js"
 		]
 	},
-	"browser_action": {
+	"action": {
 		"default_popup": "popup/popup.html",
-		"default_icon": "icon/icon.png",
+		"default_icon": "icon/icon-48.png",
 		"default_title": "__MSG_extName__"
 	},
+	"icons": {
+		"48": "icon/icon-48.png",
+		"96": "icon/icon-96.png"
+	},
 	"web_accessible_resources": [
-		"viewer/viewer.html",
-		"viewer/viewer.js",
-		"viewer/viewer.css",
-		"viewer/svg/020_TST/defaultFavicon.svg",
-		"viewer/svg/020_TST/extensions.svg",
-		"viewer/svg/020_TST/lockwise.svg"
+		{
+			"resources": [
+				"viewer/viewer.html",
+				"viewer/viewer.js",
+				"viewer/viewer.css",
+				"viewer/svg/*.svg"
+			],
+			"matches": [
+				"<all_urls>"
+			]
+		}
 	]
 }

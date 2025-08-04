@@ -64,66 +64,97 @@ const internalIcons = {
 // ===================================================
 // メインのメッセージリスナー
 // ===================================================
-browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-	(async () => {
-		try {
-			if (message.type === 'focus-tst-tab') {
-				await focusTab(message.tabId);
-				sendResponse({ success: true });
-				return;
-			}
-			if (message.type === 'delete-tab') {
-				await browser.tabs.remove(message.tabId);
-				sendResponse({ success: true });
-				return;
-			}
+// eslint-disable-next-line no-unused-vars
+browser.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
+	// Manifest V3の非永続的な環境で非同期処理を正しく扱うため、
+	// メッセージの種類に応じて、対応する非同期関数を呼び出し、その返り値(Promise)をreturnする。
+	switch (message.type) {
+		case 'export-json':
+		case 'export-tsv':
+		case 'open-viewer':
+		case 'get-viewer-data':
+			return handleDataRequest(message); // データ取得を伴う処理
 
-			const tree = await browser.runtime.sendMessage(TST_ID, { type: 'get-tree', tabs: '*' });
-			if (!tree) throw new Error('TSTからツリー構造を取得できませんでした。');
+		case 'focus-tst-tab':
+		case 'delete-tab':
+			return handleActionRequest(message); // データ取得を伴わないアクション
 
-			// ★★★ ここでビューア自身のタブをツリーから除外する ★★★
-			const viewerUrl    = browser.runtime.getURL('viewer/viewer.html');
-			const filteredTree = filterTree(tree, (tab) => tab.url !== viewerUrl);
-
-			const outputData = convertTreeForJSON(filteredTree); // フィルター済みのツリーを使う
-
-			const currentDatetime = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/[:/]/g, '').replace(/\s/g, '_');
-			const fileBaseName    = `forefox_tab_list_${currentDatetime}`;
-
-			switch (message.type) {
-				case 'export-json': {
-					const jsonString = JSON.stringify(outputData, null, 2);
-					await downloadData(jsonString, `${fileBaseName}.json`);
-					break;
-				}
-				case 'export-tsv': {
-					const tsvData = convertTreeToTSV(outputData);
-					await downloadData(tsvData, `${fileBaseName}.tsv`);
-					break;
-				}
-				case 'open-viewer': {
-					const viewerUrl = browser.runtime.getURL('viewer/viewer.html');
-					const tabs      = await browser.tabs.query({ url: viewerUrl });
-					if (tabs.length > 0) {
-						await browser.tabs.update(tabs[0].id, { active: true });
-					} else {
-						await browser.tabs.create({ url: viewerUrl });
-					}
-					break;
-				}
-				case 'get-viewer-data': {
-					sendResponse(outputData);
-					return;
-				}
-			}
-			sendResponse({ success: true });
-		} catch (err) {
-			console.error('バックグラウンド処理でエラー:', err);
-			sendResponse({ success: false, error: err.message });
-		}
-	})();
-	return true;
+		default:
+			// 不明なメッセージタイプの場合は、エラーを返すPromiseを即座に返す
+			console.error('不明なメッセージタイプを受信:', message.type);
+			return Promise.resolve({ success: false, error: 'Unknown message type' });
+	}
 });
+
+
+/**
+ * データ取得を伴うリクエストを処理する
+ * @param {object} message
+ * @returns {Promise<object>}
+ */
+async function handleDataRequest(message) {
+	try {
+		const tree = await browser.runtime.sendMessage(TmCommon.Const.TST_ID, { type: 'get-tree', tabs: '*' });
+		if (!tree) throw new Error('TSTからツリー構造を取得できませんでした。');
+
+		const viewerUrl    = browser.runtime.getURL('viewer/viewer.html');
+		const filteredTree = filterTree(tree, (tab) => tab.url !== viewerUrl);
+		const outputData   = convertTreeForJSON(filteredTree);
+
+		const currentDatetime = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/[:/]/g, '').replace(/\s/g, '_');
+		const fileBaseName    = `forefox_tab_list_${currentDatetime}`;
+
+		switch (message.type) {
+			case 'export-json': {
+				const jsonString = JSON.stringify(outputData, null, 2);
+				await downloadData(jsonString, `${fileBaseName}.json`);
+				break;
+			}
+			case 'export-tsv': {
+				const tsvData = convertTreeToTSV(outputData);
+				await downloadData(tsvData, `${fileBaseName}.tsv`);
+				break;
+			}
+			case 'open-viewer': {
+				const absoluteViewerUrl = browser.runtime.getURL('/viewer/viewer.html');
+				const tabs              = await browser.tabs.query({ url: absoluteViewerUrl });
+				if (tabs.length > 0) {
+					await browser.tabs.update(tabs[0].id, { active: true });
+				} else {
+					await browser.tabs.create({ url: '/viewer/viewer.html' });
+				}
+				break;
+			}
+			case 'get-viewer-data': {
+				return outputData; // ★★★ viewer.jsには直接データを返す ★★★
+			}
+		}
+		return { success: true };
+	} catch (err) {
+		console.error('データリクエスト処理でエラー:', err);
+		return { success: false, error: err.message };
+	}
+}
+
+/**
+ * データ取得を伴わないアクションリクエストを処理する
+ * @param {object} message
+ * @returns {Promise<object>}
+ */
+async function handleActionRequest(message) {
+	try {
+		if (message.type === 'focus-tst-tab') {
+			await focusTab(message.tabId);
+		} else if (message.type === 'delete-tab') {
+			await browser.tabs.remove(message.tabId);
+		}
+		return { success: true };
+	} catch (err) {
+		console.error('アクションリクエスト処理でエラー:', err);
+		return { success: false, error: err.message };
+	}
+}
+
 
 
 // ===================================================

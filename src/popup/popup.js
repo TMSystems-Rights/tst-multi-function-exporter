@@ -43,9 +43,11 @@ function sendMessageToBackground(type) {
 			}
 		})
 		.catch(error => {
-			console.error(`[${type}] failed:`, error);
-			alert(`エラー: ${error.message}`);
-			alert(GetMsg("errorGeneric", error.message));
+			console.error(`[${type}] の実行に失敗:`, error);
+			// ★★★ background.jsからの詳細なエラーメッセージを優先して表示 ★★★
+			const errorMessage = (error && error.message) ? error.message : TmCommon.Funcs.GetMsg("errorUnknown");
+			alert(TmCommon.Funcs.GetMsg("errorGeneric", errorMessage));
+
 			button.textContent = originalText;
 			button.disabled    = false;
 		});
