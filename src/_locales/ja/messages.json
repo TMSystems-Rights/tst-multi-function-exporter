@@ -1,8 +1,4 @@
 {
-	"extAppId": {
-		"message": "tst-tab-exporter@tm-systems.jp",
-		"description": "拡張機能のID"
-	},
 	"extName": {
 		"message": "TST 多機能エクスポーター",
 		"description": "拡張機能の名前"

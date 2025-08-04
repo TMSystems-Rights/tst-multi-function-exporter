@@ -200,7 +200,7 @@ function buildHtmlList(nodes) {
 			iconImg = `<div class="favicon-wrapper"></div>`;
 		}
 
-		html += `<div class="li-content">${iconImg}<div class="link-wrapper"><a data-tab-id="${node.id}" href="${escapeHtml(node.url || '#')}" ...>${escapeHtml(node.title)}</a></div></div>`;
+		html += `<div class="li-content">${iconImg}<div class="link-wrapper"><a data-tab-id="${node.id}" href="${escapeHtml(node.url || '#')}">${escapeHtml(node.title)}</a></div></div>`;
 
 		if (hasChildren) {
 			html += buildHtmlList(node.children);

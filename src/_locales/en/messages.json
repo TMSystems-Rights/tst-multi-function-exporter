@@ -1,8 +1,4 @@
 {
-	"extAppId": {
-		"message": "tst-tab-exporter@tm-systems.jp",
-		"description": "The application-ID of the extension."
-	},
 	"extName": {
 		"message": "TST Multi-Function Exporter",
 		"description": "The name of the extension."
@@ -30,7 +26,7 @@
 		"message": "Done!"
 	},
 	"tsvHeader_MostDepthNode": {
-		"message": "MaxDepth Node (✅Please Check Dupclicated Tabs.)"
+		"message": "Deepest Tab (✅ For checking duplicates)"
 	},
 	"tsvHeader_Node": {
 		"message": "Node"
@@ -73,9 +69,9 @@
 		"description": "Template for showing error messages. $1 will be replaced with the specific error detail."
 	},
 	"errorUnknown": {
-		"message": "不明なエラーが発生しました。"
+		"message": "An unknown error occurred."
 	},
 	"errorNoTabToDisp": {
-		"message": "表示するタブがありません。"
+		"message": "There are no tabs to display."
 	}
 }
