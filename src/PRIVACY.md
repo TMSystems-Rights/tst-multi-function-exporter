@@ -25,4 +25,4 @@ This software **does not collect, store, or transmit any personal information**,
 
 本ポリシーに関するお問い合わせは、以下のGitHubリポジトリの"Issues"までお願いいたします。
 
-[【あなたのGitHubリポジトリのURL】](【あなたのGitHubリポジトリのURL】)
+[https://github.com/TMSystems-Rights/tst-multi-function-exporter](https://github.com/TMSystems-Rights/tst-multi-function-exporter)
