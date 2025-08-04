@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<!-- JSで設定 -->
+		<title></title>
+		<style>
+			body {
+				width: 200px;
+				font-family: sans-serif;
+			}
+			button {
+				width: 90%;
+				padding: 10px;
+				font-size: 14px;
+				cursor: pointer;
+				margin: 5px auto;
+				display: block;
+			}
+			h1 {
+				text-align: center;
+				font-size: 16px;
+				margin-bottom: 10px;
+			}
+		</style>
+	</head>
+	<body>
+		<h1 data-i18n="viewerTitle"></h1>
+		<button id="exportJsonBtn" data-i18n="popupJsonButton"></button>
+		<button id="exportTsvBtn" data-i18n="popupTsvButton"></button>
+		<button id="openViewerBtn" data-i18n="popupViewerButton"></button>
+		<script src="/common/common.js"></script>
+		<script src="/popup/popup.js"></script>
+	</body>
+</html>

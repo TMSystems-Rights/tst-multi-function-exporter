@@ -1,0 +1,217 @@
+body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	line-height: 1.6;
+	background-color: #333;
+	color: #ddd;
+	margin: 0;
+	padding: 20px;
+}
+
+h1 {
+	border-bottom: 2px solid #eee;
+	padding-bottom: 10px;
+}
+
+.controls {
+	margin-bottom: 20px;
+}
+
+button {
+	padding: 5px 10px;
+	border: 1px solid #ccc;
+	background-color: #f0f0f0;
+	color: #333;
+	cursor: pointer;
+	border-radius: 4px;
+}
+
+button:hover {
+	background-color: #e0e0e0;
+}
+
+/* ========================
+ * ここからUL/LIブロック
+ * ======================== */
+
+/* ulの基本設定 */
+ul {
+	list-style: none;
+	padding: 0;
+	/* 子階層のインデント */
+	margin-left: 20px;
+}
+
+/* 一番外側のul */
+#tree-container>ul {
+	list-style: none;
+	border: 1px solid #999;
+	margin: 0;
+	/* ルートのulに余計なpaddingは不要 */
+	padding: 0;
+}
+
+/* liの基本設定 */
+li {
+	padding: 0;
+	/* 上と左罫線だけ。下罫線は引かない（二重被り防止） */
+	border-top: 1px solid #999;
+	border-left: 1px solid #999;
+}
+
+/* 最後のliの下線を消す */
+li:last-child {
+	border-bottom: none;
+}
+
+.li-content {
+	/* アイコンとテキストの上端を揃える */
+	display: flex;
+	align-items: flex-start;
+	/* アイコンの高さとpaddingを考慮 */
+	padding: 5px 10px;
+	min-height: 26px;
+}
+
+.li-content:hover {
+	background-color: #586d3b70;
+}
+
+.favicon-wrapper {
+	flex-shrink: 0;
+	/* アイコンが中央に来るように少しだけ調整 */
+	margin-right: 8px;
+	padding-top: 3px;
+
+	/* 固定幅・高さを与えて、アイコンがない場合もレイアウトを維持 */
+	width: 16px;
+	height: 16px;
+	/* アイコンを中央揃えにする */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.favicon {
+	width: 16px;
+	height: 16px;
+	display: block;
+	fill: currentColor;
+}
+
+.link-wrapper {
+	flex-grow: 1;
+	/* テキストの折り返し設定 */
+	word-break: break-all;
+}
+
+a {
+	text-decoration: none;
+	color: #e5e9c7;
+}
+
+a:hover {
+	text-decoration: underline;
+	background-color: yellow;
+	color: #333 !important;
+	font-weight: bold;
+}
+
+
+/* ========================
+ * 親要素(parent)のスタイル
+ * ======================== */
+li.parent>.li-content {
+	cursor: pointer;
+	position: relative;
+	left: -10px;
+}
+
+li.parent>.li-content:hover {
+	cursor: n-resize;
+	position: relative;
+	left: -1.9rem;
+	background-color: #7450417d;
+	padding-left: 1.9rem;
+	width: calc(100% - 2.5rem);
+	display: inline-flex;
+	margin-right: -1.9rem;
+}
+
+
+li.parent>.li-content .link-wrapper a {
+	font-weight: bold;
+}
+
+/* 擬似要素(::before)で開閉トグルを表現 */
+li.parent::before {
+	color: #30c3f3e8;
+	content: '▶';
+	font-size: 1em;
+	width: 20px;
+	/* 幅を固定してレイアウトを安定させる */
+	text-align: center;
+	display: block;
+	float: left;
+	/* Flexboxコンテナの前に回り込ませる */
+	transition: transform 0.2s;
+	/* li-contentの高さと中央揃えになるように調整 */
+	padding-top: 8px;
+	margin-left: 10px;
+	position: relative;
+	left: -0.3rem;
+	top: -0.3rem;
+}
+
+li.parent:hover::before {
+	color: #cce6ef;
+	font-weight: bold;
+}
+
+li.parent.open::before {
+	color: #ed3e3e;
+	transform: rotate(90deg);
+	top: 0;
+	left: 0;
+}
+
+li.parent.open:hover::before {
+	color: #f98d8d;
+}
+
+/* 開閉する子ulのスタイル */
+li.parent>ul {
+	display: none;
+}
+
+li.parent.open>ul {
+	display: block;
+}
+
+
+/* ========================
+ * Custom Context Menu
+ * ======================== */
+.custom-context-menu {
+	position: fixed;
+	z-index: 1000;
+	background-color: #f9f9f9;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+	padding: 5px 0;
+	min-width: 150px;
+	color: #333;
+	/* メニューのテキスト色 */
+}
+
+.custom-context-menu-item {
+	padding: 8px 15px;
+	cursor: pointer;
+	font-size: 14px;
+	white-space: pre-wrap;
+	/* タイトルが長い場合に改行を許可 */
+}
+
+.custom-context-menu-item:hover {
+	background-color: #e0e0e0;
+}

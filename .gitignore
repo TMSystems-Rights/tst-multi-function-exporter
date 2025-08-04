@@ -1,0 +1,10 @@
+# Visual Studio Code
+# .vscode/                           # 環境バックアップとして必要なので管理対象とする
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Node.js / npm
+# package.json と package-lock.json があれば、誰でも npm install コマンドで同じ環境を復元できるため、Gitで管理する必要がない。
+node_modules/

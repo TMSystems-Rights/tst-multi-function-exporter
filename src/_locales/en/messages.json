@@ -1,0 +1,81 @@
+{
+	"extAppId": {
+		"message": "tst-tab-exporter@tm-systems.jp",
+		"description": "The application-ID of the extension."
+	},
+	"extName": {
+		"message": "TST Multi-Function Exporter",
+		"description": "The name of the extension."
+	},
+	"extDescription": {
+		"message": "Export or view Tree Style Tab information as JSON/TSV/HTML, or operate it in a live viewer.",
+		"description": "The description of the extension."
+	},
+	"popupJsonButton": {
+		"message": "Save as JSON"
+	},
+	"popupTsvButton": {
+		"message": "Save as TSV"
+	},
+	"popupViewerButton": {
+		"message": "Open in Viewer"
+	},
+	"statusInProgress": {
+		"message": "Processing..."
+	},
+	"statusRequesting": {
+		"message": "Requesting..."
+	},
+	"statusDone": {
+		"message": "Done!"
+	},
+	"tsvHeader_MostDepthNode": {
+		"message": "MaxDepth Node (✅Please Check Dupclicated Tabs.)"
+	},
+	"tsvHeader_Node": {
+		"message": "Node"
+	},
+	"tsvHeader_Id": {
+		"message": "ID"
+	},
+	"tsvHeader_Title": {
+		"message": "Title"
+	},
+	"tsvHeader_Url": {
+		"message": "URL"
+	},
+	"tsvHeader_Remarks": {
+		"message": "Remarks"
+	},
+	"tsvRow_TitleUnset": {
+		"message": "★Title Unset★"
+	},
+	"tsvRow_DuplicateFound": {
+		"message": "★Duplicate Found★"
+	},
+	"viewerTitle": {
+		"message": "TST Live Viewer"
+	},
+	"viewerLoading": {
+		"message": "Loading latest tab information..."
+	},
+	"viewerRefreshButton": {
+		"message": "Refresh"
+	},
+	"viewerExpandAllButton": {
+		"message": "Expand All"
+	},
+	"viewerCollapseAllButton": {
+		"message": "Collapse All"
+	},
+	"errorGeneric": {
+		"message": "An error occurred: $1",
+		"description": "Template for showing error messages. $1 will be replaced with the specific error detail."
+	},
+	"errorUnknown": {
+		"message": "不明なエラーが発生しました。"
+	},
+	"errorNoTabToDisp": {
+		"message": "表示するタブがありません。"
+	}
+}

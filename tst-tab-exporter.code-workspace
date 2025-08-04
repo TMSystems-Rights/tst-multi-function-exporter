@@ -1,0 +1,27 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		// ==========================================
+		// ESLint設定
+		// ==========================================
+		"[javascript]": {
+			// ★JavaScriptのデフォルトフォーマッターは敢えて指定しないか、nullにする
+			// これでPrettierがJavaScriptファイルに対して動くのを防ぐ
+			"editor.defaultFormatter": null,
+
+			// ★保存時のフォーマットアクションをESLintに限定する
+			// これにより、デフォルトのフォーマッター(Prettier)は呼ばれず、
+			// ESLintの自動修正だけが実行される。
+			"editor.codeActionsOnSave": ["source.fixAll.eslint"]
+		},
+		// 保存時にESLintによる自動修正を有効にする
+		"editor.codeActionsOnSave": ["source.fixAll.eslint"],
+		"eslint.format.enable": true,
+		"eslint.useESLintClass": true
+	}
+}
+
