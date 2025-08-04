@@ -148,3 +148,12 @@ Firefoxブラウザ上で、「Tree Style Tab - ツリー型タブ」で開い�
 - [ ] 【全体】Chromeストア版、Edgeストア版も作りたい。（TSTがあればの話）
 - [ ] 【全体】各種ブラウザ版が完成したら、正式に各ストア登録申請をする。<br>
       （※そうなった際は、GitHubに公開リポジトリをそれぞれ作成する）
+
+
+
+
+## 謝辞 (Acknowledgements)
+
+このアドオンは、Piro氏によって開発された[Tree Style Tab](https://github.com/piroor/treestyletab/) (Mozilla Public License 2.0) のAPIを利用し、一部のアイコンリソースを含んでいます。素晴らしいアドオンと、その開発コミュニティに心から感謝します。
+
+This extension uses APIs from and includes some icon resources of Tree Style Tab, developed by Piro and licensed under the Mozilla Public License 2.0. Special thanks to the great addon and its community.
