@@ -1,11 +1,16 @@
 {
 	"manifest_version": 3,
 	"name": "__MSG_extName__",
-	"version": "2.0.0",
+	"version": "2.0.1",
 	"description": "__MSG_extDescription__",
 	"author": "TMSystems",
-	"homepage_url": "https://github.com/TMSystems-Rights/tst-tab-exporter",
+	"homepage_url": "https://github.com/TMSystems-Rights/tst-multi-function-exporter",
 	"default_locale": "ja",
+	"browser_specific_settings": {
+		"gecko": {
+			"id": "{3414d66d-8a1a-4201-87c7-4741ee9a0556}"
+		}
+	},
 	"permissions": [
 		"tabs",
 		"downloads",
