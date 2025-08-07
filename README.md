@@ -46,7 +46,7 @@ Export your tab tree in various formats, and browse/operate it with a powerful l
 
 ## インストール (Installation)
 
-【ストアに公開されたら、ここにアドオンストアへのリンクを記載】
+[製品ページ（こちらのリンクからアドオンをインストールできます）](https://addons.mozilla.org/ja/firefox/addon/tst-multi-function-exporter/)
 
 ## ライセンス (License)
 
