@@ -1,9 +1,9 @@
 # TST多機能エクスポーター (TST Multi-Function Exporter)
 
-**Tree Style Tab (TST) のための、便利なタブ管理コンソール。**
+**Tree Style Tab (TST) のための、便利なタブ管理コンソール。Firefoxブラウザ用拡張機能です。**
 タブのツリー構造を、多彩な形式でエクスポートし、強力なライブビューアで閲覧・操作できます。
 
-**An Convenient tab management console for Tree Style Tab (TST).**
+**An Convenient tab management console for Tree Style Tab (TST). For Firefox web browser.**
 Export your tab tree in various formats, and browse/operate it with a powerful live viewer.
 
 ### ＝＝＝ ビューア画面 ＝＝＝
@@ -17,7 +17,8 @@ Export your tab tree in various formats, and browse/operate it with a powerful l
 
 ## 主な機能 (Features)
 
-この拡張機能は、[Tree Style Tab](https://addons.mozilla.org/firefox/addon/tree-style-tab/) を利用しているユーザーに、便利なタブ管理機能を提供します。
+この拡張機能は、Firefoxブラウザ用拡張機能です。<br>
+[Tree Style Tab](https://addons.mozilla.org/firefox/addon/tree-style-tab/) を利用しているユーザーに、便利なタブ管理機能を提供します。
 
 -   **多彩なエクスポート (Versatile Exports)**
     -   **JSON**: ツリー構造を維持したまま、バックアップや他のツールとの連携に最適な形式で保存します。
