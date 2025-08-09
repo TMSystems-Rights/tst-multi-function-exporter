@@ -4,6 +4,16 @@
 
 const TST_ID = TmCommon.Const.TST_ID;
 
+// ===================================================
+// グローバルな状態管理
+// ===================================================
+// 復元の進捗を記録するための、グローバルな状態オブジェクト
+let restoreState = {
+	inProgress: false,
+	loaded: 0,
+	total: 0
+};
+
 // ======================================================
 // アイコンURL定義 ※TSTのfavicon表示仕様にあわせています。
 // 基本はFirefox標準のfaviconから取得し、TST独自のはTST公式（下記URLの中）から取得。
@@ -73,20 +83,25 @@ browser.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
 		case 'export-tsv':
 		case 'open-viewer':
 		case 'get-viewer-data':
-			return handleDataRequest(message); // データ取得を伴う処理
-
+			return handleDataRequest(message);
 		case 'focus-tst-tab':
 		case 'delete-tab':
-			return handleActionRequest(message); // データ取得を伴わないアクション
-
+			return handleActionRequest(message);
+		case 'restore-tabs':
+			return handleRestoreRequest(message.data);
+		case 'get-restore-progress':
+			return Promise.resolve(restoreState);
 		default:
-			// 不明なメッセージタイプの場合は、エラーを返すPromiseを即座に返す
 			console.error('不明なメッセージタイプを受信:', message.type);
 			return Promise.resolve({ success: false, error: 'Unknown message type' });
 	}
 });
 
 
+
+// ===================================================
+// リクエストハンドラ
+// ===================================================
 /**
  * データ取得を伴うリクエストを処理する
  * @param {object} message
@@ -94,16 +109,13 @@ browser.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
  */
 async function handleDataRequest(message) {
 	try {
-		const tree = await browser.runtime.sendMessage(TmCommon.Const.TST_ID, { type: 'get-tree', tabs: '*' });
+		const tree = await browser.runtime.sendMessage(TST_ID, { type: 'get-tree', tabs: '*' });
 		if (!tree) throw new Error('TSTからツリー構造を取得できませんでした。');
-
-		const viewerUrl    = browser.runtime.getURL('viewer/viewer.html');
-		const filteredTree = filterTree(tree, (tab) => tab.url !== viewerUrl);
-		const outputData   = convertTreeForJSON(filteredTree);
-
+		const viewerUrl       = browser.runtime.getURL('viewer/viewer.html');
+		const filteredTree    = filterTree(tree, (tab) => tab.url !== viewerUrl);
+		const outputData      = convertTreeForJSON(filteredTree);
 		const currentDatetime = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/[:/]/g, '').replace(/\s/g, '_');
 		const fileBaseName    = `forefox_tab_list_${currentDatetime}`;
-
 		switch (message.type) {
 			case 'export-json': {
 				const jsonString = JSON.stringify(outputData, null, 2);
@@ -126,7 +138,7 @@ async function handleDataRequest(message) {
 				break;
 			}
 			case 'get-viewer-data': {
-				return outputData; // ★★★ viewer.jsには直接データを返す ★★★
+				return outputData;
 			}
 		}
 		return { success: true };
@@ -155,7 +167,231 @@ async function handleActionRequest(message) {
 	}
 }
 
+/**
+ *　JSONからのタブ復元用リクエストを処理する
+ * @param {object} data
+ * @returns {Promise<object>}
+ */
+// async function handleRestoreRequest(data) {
+// 	try {
+// 		restoreState           = { inProgress: true, loaded: 0, total: 0 };
+// 		let totalTabsToRestore = 0;
+// 		let discardedTabsCount = 0; // ★★★ 破棄済みタブの数をカウント ★★★
 
+// 		/** */
+// 		function countTabs(nodes) {
+// 			for (const node of nodes) {
+// 				let urlToOpen = node.url;
+// 				if (!urlToOpen || urlToOpen === 'about:newtab' || urlToOpen === 'about:home' || urlToOpen === 'about:blank' || !urlToOpen.startsWith('about:')) {
+// 					totalTabsToRestore++;
+// 					if (node.discarded) { // ★★★ 破棄済みならカウント ★★★
+// 						discardedTabsCount++;
+// 					}
+// 				}
+// 				if (node.children) countTabs(node.children);
+// 			}
+// 		}
+// 		countTabs(data);
+// 		restoreState.total = totalTabsToRestore;
+// 		// console.log(`復元対象のタブ総数: ${totalTabsToRestore}`);
+// 		console.log(`復元対象: ${totalTabsToRestore} (うち破棄済み: ${discardedTabsCount})`);
+// 		if (totalTabsToRestore === 0) return { success: true };
+
+// 		// ★★★ 読み込み完了済みの数に、最初から破棄済みタブの数を足しておく ★★★
+// 		restoreState = { inProgress: true, loaded: discardedTabsCount, total: totalTabsToRestore };
+
+// 		const loadedTabs    = new Set();
+// 		const createdTabIds = new Set();
+// 		const viewerUrl     = browser.runtime.getURL('/viewer/viewer.html');
+// 		const viewerTabs    = await browser.tabs.query({ url: viewerUrl });
+// 		const viewerTabId   = viewerTabs.length > 0 ? viewerTabs[0].id : null;
+
+// 		const allTabsLoadedPromise = new Promise(resolve => {
+// 			const listener = (tabId, changeInfo, tab) => {
+// 				if (createdTabIds.has(tabId) && !loadedTabs.has(tabId)) {
+// 					let isLoaded = false;
+// 					if (changeInfo.status === 'complete') {
+// 						isLoaded = true;
+// 					} else if (changeInfo.title) {
+// 						if (tab.url) {
+// 							try {
+// 								const urlWithoutProtocol = tab.url.replace(/^[^/]+:\/\//, '');
+// 								let urlCut               = urlWithoutProtocol;
+// 								let titleCut             = changeInfo.title;
+// 								if (titleCut.length < urlWithoutProtocol.length) {
+// 									urlCut = urlWithoutProtocol.substring(0, titleCut.length);
+// 								} else {
+// 									titleCut = changeInfo.title.substring(0, urlWithoutProtocol.length);
+// 								}
+// 								if (titleCut !== urlCut) isLoaded = true;
+// 							} catch (e) {
+// 								console.error('URL解析エラー', e);
+// 							}
+// 						} else {
+// 							isLoaded = true;
+// 						}
+// 					}
+// 					if (isLoaded) {
+// 						loadedTabs.add(tabId);
+// 						restoreState.loaded = loadedTabs.size;
+
+// 						const titleForLog = TmCommon.Funcs.CutStringByLength(tab.title, 70);
+// 						const urlForLog   = TmCommon.Funcs.CutStringByLength(tab.url, 80);
+
+// 						console.log(`読み込み完了: ${restoreState.loaded} / ${restoreState.total}: url="${urlForLog}", title="${titleForLog}"`);
+// 						if (viewerTabId) {
+// 							browser.tabs.sendMessage(viewerTabId, {
+// 								type: 'update-progress',
+// 								loaded: loadedTabs.size,
+// 								total: totalTabsToRestore
+// 							}).catch(e => console.warn('ビューアへの進捗通知に失敗。', e));
+// 						}
+// 						if (loadedTabs.size >= totalTabsToRestore) {
+// 							browser.tabs.onUpdated.removeListener(listener);
+// 							clearTimeout(timeoutId);
+// 							resolve();
+// 						}
+// 					}
+// 				}
+// 			};
+// 			browser.tabs.onUpdated.addListener(listener);
+// 			const timeoutId = setTimeout(() => {
+// 				console.warn('復元処理がタイムアウトしました。');
+// 				browser.tabs.onUpdated.removeListener(listener);
+// 				resolve();
+// 			}, 60000);
+// 		});
+
+// 		restoreSubtree(data, null, createdTabIds);
+// 		await allTabsLoadedPromise;
+
+// 		if (viewerTabId) {
+// 			try {
+// 			  await browser.tabs.sendMessage(viewerTabId, { type: 'refresh-view' });
+// 			} catch (e) {
+// 				console.error('ビューアへの更新通知に失敗', e);
+// 			}
+// 		}
+// 		return { success: true };
+// 	} catch (err) {
+// 		console.error('handleRestoreRequestでエラー:', err);
+// 		return { success: false, error: err.message };
+// 	} finally {
+// 		restoreState.inProgress = false;
+// 	}
+// }
+
+
+/**
+ *　JSONからのタブ復元用リクエストを処理する
+ * @param {object} data
+ * @returns {Promise<object>}
+ */
+async function handleRestoreRequest(data) {
+	try {
+		restoreState = { inProgress: true, loaded: 0, total: 0 };
+
+		let totalTabsToRestore = 0;
+		let simpleTabsCount    = 0; // ★★★ about:newtabなどを数えるカウンター ★★★
+
+		/**
+		 *
+		 */
+		function countTabs(nodes) {
+			for (const node of nodes) {
+				if (!node.url || !node.url.startsWith('about:') || ['about:blank', 'about:newtab', 'about:home'].includes(node.url)) {
+					totalTabsToRestore++;
+					// ★★★ すぐに完了するタブを、事前に数えておく ★★★
+					if (!node.url || ['about:blank', 'about:newtab', 'about:home'].includes(node.url)) {
+						simpleTabsCount++;
+					}
+				}
+				if (node.children) countTabs(node.children);
+			}
+		}
+		countTabs(data);
+		restoreState.total = totalTabsToRestore;
+
+		console.log(`復元対象: ${totalTabsToRestore} (うち即時完了: ${simpleTabsCount})`);
+		if (totalTabsToRestore === 0) {
+			restoreState.inProgress = false;
+			return { success: true };
+		}
+
+		const loadedTabs    = new Set();
+		const createdTabIds = new Set();
+		const viewerUrl     = browser.runtime.getURL('/viewer/viewer.html');
+		const viewerTabs    = await browser.tabs.query({ url: viewerUrl });
+		const viewerTabId   = viewerTabs.length > 0 ? viewerTabs[0].id : null;
+
+		// ★★★ 読み込み完了数に、最初から即時完了タブの数を足しておく ★★★
+		restoreState.loaded = simpleTabsCount;
+		if (viewerTabId) {
+			browser.tabs.sendMessage(viewerTabId, {
+				type: 'update-progress',
+				loaded: restoreState.loaded,
+				total: restoreState.total
+			}).catch(e => {
+				console.errot('エラー発生', e);
+			});
+		}
+
+		const allTabsLoadedPromise = new Promise(resolve => {
+			const listener = (tabId, changeInfo, tab) => {
+				if (createdTabIds.has(tabId) && !loadedTabs.has(tabId)) {
+
+					// console.log(`★★★ Point1: URL="${tab.url}, changeInfo.status="${changeInfo.status}", changeInfo.title="${changeInfo.title}"`);
+
+					let isLoaded = false;
+					if (tab.status === 'complete' || (tab.title && tab.url && tab.title !== tab.url.replace(/^[^/]+:\/\//, '').substring(0, tab.title.length))) {
+						isLoaded = true;
+					}
+					if (isLoaded) {
+						loadedTabs.add(tabId);
+						// ★★★ 読み込み完了数 ＋ 事前に数えた即時完了数 ★★★
+						restoreState.loaded = loadedTabs.size + simpleTabsCount;
+
+						const titleForLog = TmCommon.Funcs.CutStringByLength(tab.title, 70);
+						const urlForLog   = TmCommon.Funcs.CutStringByLength(tab.url, 80);
+						console.log(`読み込み完了: ${restoreState.loaded} / ${restoreState.total}: url="${urlForLog}", title="${titleForLog}"`);
+
+						if (viewerTabId) {
+							browser.tabs.sendMessage(viewerTabId, {
+								type: 'update-progress',
+								loaded: restoreState.loaded, total: restoreState.total
+							}).catch(e => {
+								console.errot('エラー発生', e);
+							});
+						}
+						if (restoreState.loaded >= totalTabsToRestore) {
+							browser.tabs.onUpdated.removeListener(listener);
+							clearTimeout(timeoutId);
+							resolve();
+						}
+					}
+				}
+			};
+			browser.tabs.onUpdated.addListener(listener, { properties: ["status", "title"] });
+			const timeoutId = setTimeout(() => {
+				console.warn(`復元処理がタイムアウトしました。`);
+				browser.tabs.onUpdated.removeListener(listener);
+				resolve();
+			}, 60000);
+		});
+
+		await restoreSubtree(data, null, createdTabIds);
+		await allTabsLoadedPromise;
+
+		if (viewerTabId) {
+			await browser.tabs.sendMessage(viewerTabId, { type: 'refresh-view' });
+		}
+	} catch (err) {
+		console.error('handleRestoreRequestでエラー:', err);
+		return { success: false, error: err.message };
+	} finally {
+		restoreState.inProgress = false;
+	}
+}
 
 // ===================================================
 // ヘルパー関数群
@@ -227,6 +463,57 @@ function convertTreeForJSON(tabs) {
 	return roots;
 }
 
+/** 階層ツリー作成 */
+function buildSubtree(tab, processed, tabMap) {
+
+	if (processed.has(tab.id)) {
+		return null;
+	}
+	processed.add(tab.id);
+
+	// ===================================================
+	// アイコン選択ロジック
+	// ===================================================
+	let finalFavIconUrl = FALLBACK_ICON_URL; // まず、フォールバックをデフォルトとする
+
+	// 1. internalIconsから、最も長く一致するキーを探す
+	let bestMatchKey = '';
+	for (const key of Object.keys(internalIcons)) {
+		if (tab.url.startsWith(key) && key.length >= bestMatchKey.length) {
+			bestMatchKey = key;
+		}
+	}
+
+	// 2. 最長一致キーが見つかれば、それを最優先で採用
+	if (bestMatchKey) {
+		finalFavIconUrl = internalIcons[bestMatchKey];
+	} else if (tab.favIconUrl) {
+		// ルールになく、安全なURL(http/https/dataなど)のfavIconがあればそれを採用
+		finalFavIconUrl = tab.favIconUrl;
+	} else if (tab.effectiveFavIconUrl) {
+		// 上記以外で、TSTが安全なdataスキーマなどを生成している場合は、それを尊重する
+		finalFavIconUrl = tab.effectiveFavIconUrl;
+	}
+
+
+	const node = {
+		title: tab.title,
+		url: tab.url,
+		id: tab.id,
+		favIconUrl: finalFavIconUrl,
+		discarded: tab.discarded || false // ★★★ 破棄状態を記録 ★★★
+	};
+
+	if (tab.children && tab.children.length > 0) {
+		node.children = tab.children
+			.map(childTab => buildSubtree(childTab, processed, tabMap))
+			.filter(childNode => childNode !== null);
+		if (node.children.length === 0) {
+			delete node.children;
+		}
+	}
+	return node;
+}
 
 /** ★★★ TSVへの変換ロジック ★★★ */
 function convertTreeToTSV(jsonData) {
@@ -345,55 +632,92 @@ function convertTreeToTSV(jsonData) {
 	return [header1.join('\t'), header2.join('\t'), ...rows].join('\n');
 }
 
-/** 階層ツリー作成 */
-function buildSubtree(tab, processed, tabMap) {
+/**
+ *
+ */
+// async function restoreSubtree(nodes, parentId = null, createdTabsSet) {
+// 	for (const node of nodes) {
+// 		try {
+// 			let urlToOpen = node.url;
 
-	if (processed.has(tab.id)) {
-		return null;
-	}
-	processed.add(tab.id);
+// 			// about:newtab と about:home は、URLを指定せずに開くのが正しい作法
+// 			if (!urlToOpen || urlToOpen === 'about:newtab' || urlToOpen === 'about:home') {
+// 				urlToOpen = undefined;
+// 			} else if (node.url === 'about:blank') {
+// 				// about:blank は安全に開ける
+// 				// 何もしない
+// 			} else if (node.url && node.url.startsWith('about:')) {
+// 				// その他の about: ページは開けないのでスキップ
+// 				console.warn(`セキュリティ上の理由により、このタブは復元をスキップします: ${node.url}`);
+// 				continue; // 次のノードへ
+// 			}
 
-	// ===================================================
-	// アイコン選択ロジック
-	// ===================================================
-	let finalFavIconUrl = FALLBACK_ICON_URL; // まず、フォールバックをデフォルトとする
+// 			// ★★★ discarded の指定を、完全に削除 ★★★
+// 			// すべてのタブを「起きたまま」復元する。これが最も安全で確実。
+// 			const newTab = await browser.tabs.create({
+// 				url: urlToOpen,
+// 				active: false,
+// 				openerTabId: parentId,
+// 				discarded: node.discarded && !urlToOpen?.startsWith('about:')
+// 			});
 
-	// 1. internalIconsから、最も長く一致するキーを探す
-	let bestMatchKey = '';
-	for (const key of Object.keys(internalIcons)) {
-		if (tab.url.startsWith(key) && key.length >= bestMatchKey.length) {
-			bestMatchKey = key;
+// 			if (newTab) {
+// 				createdTabsSet.add(newTab.id);
+// 				if (newTab.discarded && newTab.url) {
+// 					browser.tabs.reload(newTab.id);
+// 				}
+// 			}
+// 			if (node.children && node.children.length > 0 && newTab) {
+// 				await restoreSubtree(node.children, newTab.id, createdTabsSet);
+// 			}
+// 		} catch (err) {
+// 			console.error(`タブの復元プロセスでエラーが発生しました: url=${node.url}`, err);
+// 		}
+// 	}
+// }
+
+/**
+ * 再帰的にタブを復元する、究極の最終確定版関数
+ * @param {Array} nodes - 復元するタブのノード配列
+ * @param {number|null} [parentId=null] - 親タブのID
+ * @param {Set<number>} createdTabsSet - 作成されたタブIDを記録するためのSet
+ */
+async function restoreSubtree(nodes, parentId = null, createdTabsSet) {
+	for (const node of nodes) {
+		let newTab     = null;
+		let shouldSkip = false;
+
+		try {
+			let urlToOpen = node.url;
+
+			if (!urlToOpen || urlToOpen === 'about:newtab' || urlToOpen === 'about:home') {
+				urlToOpen = undefined;
+			} else if (node.url.startsWith('about:') && node.url !== 'about:blank') {
+				console.warn(`セキュリティ上の理由により、このタブは復元をスキップします: ${node.url}`);
+				shouldSkip = true; // ★★★ スキップのフラグを立てる ★★★
+			}
+
+			if (!shouldSkip) {
+				newTab = await browser.tabs.create({
+					url: urlToOpen,
+					active: false,
+					openerTabId: parentId
+				});
+				if (newTab) {
+					createdTabsSet.add(newTab.id);
+				}
+			}
+
+			if (node.children && node.children.length > 0) {
+				// ★★★ 親がスキップされても、子は祖父(parentId)の元で生き続ける ★★★
+				await restoreSubtree(node.children, newTab ? newTab.id : parentId, createdTabsSet);
+			}
+		} catch (err) {
+			console.error(`タブの作成プロセスでエラーが発生しました: url=${node.url}`, err);
+			// エラーが発生した場合も、子の復元を試みる
+			if (node.children && node.children.length > 0) {
+				await restoreSubtree(node.children, parentId, createdTabsSet);
+			}
 		}
 	}
-
-	// 2. 最長一致キーが見つかれば、それを最優先で採用
-	if (bestMatchKey) {
-		finalFavIconUrl = internalIcons[bestMatchKey];
-	} else if (tab.favIconUrl) {
-		// ルールになく、安全なURL(http/https/dataなど)のfavIconがあればそれを採用
-		finalFavIconUrl = tab.favIconUrl;
-	} else if (tab.effectiveFavIconUrl) {
-		// 上記以外で、TSTが安全なdataスキーマなどを生成している場合は、それを尊重する
-		finalFavIconUrl = tab.effectiveFavIconUrl;
-	}
-
-
-	const node = {
-		title: tab.title,
-		url: tab.url,
-		id: tab.id,
-		favIconUrl: finalFavIconUrl
-	};
-
-	if (tab.children && tab.children.length > 0) {
-		node.children = tab.children
-			.map(childTab => buildSubtree(childTab, processed, tabMap))
-			.filter(childNode => childNode !== null);
-		if (node.children.length === 0) {
-			delete node.children;
-		}
-	}
-	return node;
 }
-
-

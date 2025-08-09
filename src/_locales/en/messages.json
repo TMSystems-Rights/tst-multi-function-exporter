@@ -49,6 +49,9 @@
 	"tsvRow_DuplicateFound": {
 		"message": "★Duplicate Found★"
 	},
+	"popupTitle": {
+		"message": "Export Tools"
+	},
 	"viewerTitle": {
 		"message": "TST Live Viewer"
 	},
@@ -73,5 +76,14 @@
 	},
 	"errorNoTabToDisp": {
 		"message": "There are no tabs to display."
+	},
+	"popupRestoreButton": {
+		"message": "Restore from JSON"
+	},
+	"viewerRestoring": {
+		"message": "Restoring... Please wait."
+	},
+	"contextMenuDelete": {
+		"message": "Delete this tab"
 	}
 }

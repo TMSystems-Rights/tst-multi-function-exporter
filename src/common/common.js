@@ -59,10 +59,23 @@ const TmCommon = {
 				const titleElem = document.querySelector('title[data-i18n]');
 				document.title  = getMsg(titleElem.getAttribute('data-i18n'));
 			}
+		},
+
+		CutStringByLength: function (str, maxLen) {
+			let rtn = '';
+			if (str) {
+				if (str && str.length > maxLen) {
+					rtn = str.substring(0,maxLen -1) + '…';
+				} else {
+					rtn = str.substring(0, maxLen);
+				}
+			}
+			return rtn;
 		}
+
+
 	}
 };
-
 
 /**
  * オブジェクトを再帰的に（深く）凍結する関数 (ESLint no-prototype-builtins 対応版)

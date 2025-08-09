@@ -217,3 +217,49 @@ li.parent.open>ul {
 .custom-context-menu-item:hover {
 	background-color: #e0e0e0;
 }
+
+
+/* ========================
+ * Loading Mask & Progress Bar
+ * ======================== */
+.loading-mask {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	background-color: rgba(0, 0, 0, 0.7);
+	z-index: 9999;
+	display: none;
+	justify-content: center;
+	align-items: center;
+	flex-direction: column;
+	/* 縦に並べる */
+}
+
+.loading-mask.is-active {
+	display: flex;
+}
+
+.progress-container {
+	width: 80%;
+	max-width: 400px;
+	background-color: #555;
+	border-radius: 5px;
+	overflow: hidden;
+	border: 1px solid #777;
+}
+
+.progress-bar {
+	width: 0%;
+	height: 20px;
+	background-color: #3498db;
+	transition: width 0.3s ease-in-out;
+}
+
+.progress-text {
+	padding: 10px;
+	color: #f0f0f0;
+	font-size: 14px;
+	font-weight: bold;
+}

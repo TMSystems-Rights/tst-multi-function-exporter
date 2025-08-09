@@ -49,6 +49,9 @@
 	"tsvRow_DuplicateFound": {
 		"message": "★重複あり★"
 	},
+	"popupTitle": {
+		"message": "エクスポート・ツール"
+	},
 	"viewerTitle": {
 		"message": "TST ライブビューア"
 	},
@@ -73,5 +76,14 @@
 	},
 	"errorNoTabToDisp": {
 		"message": "表示するタブがありません。"
+	},
+	"popupRestoreButton": {
+		"message": "JSONから復元"
+	},
+	"viewerRestoring": {
+		"message": "復元中です... しばらくお待ちください。"
+	},
+	"contextMenuDelete": {
+		"message": "このタブを削除"
 	}
 }
