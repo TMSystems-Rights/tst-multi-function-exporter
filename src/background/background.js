@@ -167,25 +167,27 @@ async function handleActionRequest(message) {
 	}
 }
 
-/**
- *　JSONからのタブ復元用リクエストを処理する
- * @param {object} data
- * @returns {Promise<object>}
- */
+
+// /**
+//  *　JSONからのタブ復元用リクエストを処理する
+//  * @param {object} data
+//  * @returns {Promise<object>}
+//  */
 // async function handleRestoreRequest(data) {
 // 	try {
-// 		restoreState           = { inProgress: true, loaded: 0, total: 0 };
-// 		let totalTabsToRestore = 0;
-// 		let discardedTabsCount = 0; // ★★★ 破棄済みタブの数をカウント ★★★
+// 		restoreState = { inProgress: true, loaded: 0, total: 0 };
 
-// 		/** */
+// 		let totalTabsToRestore = 0;
+// 		let simpleTabsCount    = 0; // ★★★ about:newtabなどを数えるカウンター ★★★
+
+// 		/** 復元対象のタブ数を導出する */
 // 		function countTabs(nodes) {
 // 			for (const node of nodes) {
-// 				let urlToOpen = node.url;
-// 				if (!urlToOpen || urlToOpen === 'about:newtab' || urlToOpen === 'about:home' || urlToOpen === 'about:blank' || !urlToOpen.startsWith('about:')) {
+// 				if (!node.url || !node.url.startsWith('about:') || ['about:blank', 'about:newtab', 'about:home'].includes(node.url)) {
 // 					totalTabsToRestore++;
-// 					if (node.discarded) { // ★★★ 破棄済みならカウント ★★★
-// 						discardedTabsCount++;
+// 					// ★★★ すぐに完了するタブを、事前に数えておく ★★★
+// 					if (!node.url || ['about:blank', 'about:newtab', 'about:home'].includes(node.url)) {
+// 						simpleTabsCount++;
 // 					}
 // 				}
 // 				if (node.children) countTabs(node.children);
@@ -193,12 +195,12 @@ async function handleActionRequest(message) {
 // 		}
 // 		countTabs(data);
 // 		restoreState.total = totalTabsToRestore;
-// 		// console.log(`復元対象のタブ総数: ${totalTabsToRestore}`);
-// 		console.log(`復元対象: ${totalTabsToRestore} (うち破棄済み: ${discardedTabsCount})`);
-// 		if (totalTabsToRestore === 0) return { success: true };
 
-// 		// ★★★ 読み込み完了済みの数に、最初から破棄済みタブの数を足しておく ★★★
-// 		restoreState = { inProgress: true, loaded: discardedTabsCount, total: totalTabsToRestore };
+// 		console.log(`復元対象: ${totalTabsToRestore} (うち即時完了: ${simpleTabsCount})`);
+// 		if (totalTabsToRestore === 0) {
+// 			restoreState.inProgress = false;
+// 			return { success: true };
+// 		}
 
 // 		const loadedTabs    = new Set();
 // 		const createdTabIds = new Set();
@@ -206,47 +208,65 @@ async function handleActionRequest(message) {
 // 		const viewerTabs    = await browser.tabs.query({ url: viewerUrl });
 // 		const viewerTabId   = viewerTabs.length > 0 ? viewerTabs[0].id : null;
 
+// 		// ★★★ 読み込み完了数に、最初から即時完了タブの数を足しておく ★★★
+// 		restoreState.loaded = simpleTabsCount;
+// 		if (viewerTabId) {
+// 			browser.tabs.sendMessage(viewerTabId, {
+// 				type: 'update-progress',
+// 				loaded: restoreState.loaded,
+// 				total: restoreState.total
+// 			}).catch(e => {
+// 				console.errot('エラー発生', e);
+// 			});
+// 		}
+
 // 		const allTabsLoadedPromise = new Promise(resolve => {
 // 			const listener = (tabId, changeInfo, tab) => {
 // 				if (createdTabIds.has(tabId) && !loadedTabs.has(tabId)) {
+
 // 					let isLoaded = false;
+// 					// #### ロジック修正 MOD START --
+// 					// if (tab.status === 'complete' || (tab.title && tab.url && tab.title !== tab.url.replace(/^[^/]+:\/\//, '').substring(0, tab.title.length))) {
+// 					// 	isLoaded = true;
+// 					// }
+
+// 					// デバッグログ出力
+// 					if (tab.url.startsWith('about:')) writeDebugLog(tabId, changeInfo, tab, "0");
+
 // 					if (changeInfo.status === 'complete') {
 // 						isLoaded = true;
+
+// 						// デバッグログ出力
+// 						if (tab.url.startsWith('about:')) writeDebugLog(tabId, changeInfo, tab, "1");
+// 					// #### ロジック修正 MOD END --
 // 					} else if (changeInfo.title) {
 // 						if (tab.url) {
-// 							try {
-// 								const urlWithoutProtocol = tab.url.replace(/^[^/]+:\/\//, '');
-// 								let urlCut               = urlWithoutProtocol;
-// 								let titleCut             = changeInfo.title;
-// 								if (titleCut.length < urlWithoutProtocol.length) {
-// 									urlCut = urlWithoutProtocol.substring(0, titleCut.length);
-// 								} else {
-// 									titleCut = changeInfo.title.substring(0, urlWithoutProtocol.length);
-// 								}
-// 								if (titleCut !== urlCut) isLoaded = true;
-// 							} catch (e) {
-// 								console.error('URL解析エラー', e);
-// 							}
+// 							isLoaded = isLoadedCompareToTitleAndUtl(tab, changeInfo);
 // 						} else {
 // 							isLoaded = true;
 // 						}
 // 					}
+
+
 // 					if (isLoaded) {
 // 						loadedTabs.add(tabId);
-// 						restoreState.loaded = loadedTabs.size;
+// 						// ★★★ 読み込み完了数 ＋ 事前に数えた即時完了数 ★★★
+// 						restoreState.loaded = loadedTabs.size + simpleTabsCount;
 
 // 						const titleForLog = TmCommon.Funcs.CutStringByLength(tab.title, 70);
 // 						const urlForLog   = TmCommon.Funcs.CutStringByLength(tab.url, 80);
+// 						// console.log(`読み込み完了: ${restoreState.loaded} / ${restoreState.total}: url="${urlForLog}", title="${titleForLog}"`);
+// 						console.log(`読み込み完了: ${restoreState.loaded} / ${restoreState.total}: tabId="${tabId}" url="${urlForLog}", title="${titleForLog}"`);
 
-// 						console.log(`読み込み完了: ${restoreState.loaded} / ${restoreState.total}: url="${urlForLog}", title="${titleForLog}"`);
 // 						if (viewerTabId) {
 // 							browser.tabs.sendMessage(viewerTabId, {
 // 								type: 'update-progress',
-// 								loaded: loadedTabs.size,
-// 								total: totalTabsToRestore
-// 							}).catch(e => console.warn('ビューアへの進捗通知に失敗。', e));
+// 								loaded: restoreState.loaded, total: restoreState.total
+// 							}).catch(e => {
+// 								console.errot('エラー発生', e);
+// 							});
 // 						}
-// 						if (loadedTabs.size >= totalTabsToRestore) {
+// 						if (restoreState.loaded >= totalTabsToRestore) {
 // 							browser.tabs.onUpdated.removeListener(listener);
 // 							clearTimeout(timeoutId);
 // 							resolve();
@@ -254,25 +274,57 @@ async function handleActionRequest(message) {
 // 					}
 // 				}
 // 			};
-// 			browser.tabs.onUpdated.addListener(listener);
+// 			browser.tabs.onUpdated.addListener(listener, { properties: ["status", "title"] });
 // 			const timeoutId = setTimeout(() => {
-// 				console.warn('復元処理がタイムアウトしました。');
+// 				console.warn(`復元処理がタイムアウトしました。`);
 // 				browser.tabs.onUpdated.removeListener(listener);
 // 				resolve();
 // 			}, 60000);
 // 		});
 
-// 		restoreSubtree(data, null, createdTabIds);
+// 		const isLoadedCompareToTitleAndUtl = (tab, changeInfo) => {
+// 			try {
+// 				let isLoaded = false;
+
+// 				if (!(tab.url && changeInfo.title)) return false;
+
+// 				const urlWithoutProtocol = tab.url.replace(/^[^/]+:\/\//, '');
+// 				let urlCut               = urlWithoutProtocol;
+// 				let titleCut             = changeInfo.title;
+// 				if (titleCut.length < urlWithoutProtocol.length) {
+// 					urlCut = urlWithoutProtocol.substring(0, titleCut.length);
+// 				} else {
+// 					titleCut = changeInfo.title.substring(0, urlWithoutProtocol.length);
+// 				}
+// 				if (titleCut !== urlCut) {
+// 					isLoaded = true;
+// 				}
+// 				return isLoaded;
+
+// 			} catch (e) {
+// 				console.error('URL解析エラー', e);
+// 				return false;
+// 			}
+// 		};
+
+// 		/** */
+// 		const writeDebugLog = (tabId, changeInfo, tab, positionStr) => {
+// 			console.log(`================================\n` +
+// 						`★★★${positionStr} tabId="${tabId}" ` +
+// 						`changeInfo.title ="${changeInfo.title}" ` +
+// 						`changeInfo.status="${changeInfo.status}" ` +
+// 						`tab.url="${tab.url}" ` +
+// 						`tab.title="${tab.title}" ` +
+// 						`tab.status="${tab.status}" `);
+// 		};
+
+
+// 		await restoreSubtree(data, null, createdTabIds);
 // 		await allTabsLoadedPromise;
 
 // 		if (viewerTabId) {
-// 			try {
-// 			  await browser.tabs.sendMessage(viewerTabId, { type: 'refresh-view' });
-// 			} catch (e) {
-// 				console.error('ビューアへの更新通知に失敗', e);
-// 			}
+// 			await browser.tabs.sendMessage(viewerTabId, { type: 'refresh-view' });
 // 		}
-// 		return { success: true };
 // 	} catch (err) {
 // 		console.error('handleRestoreRequestでエラー:', err);
 // 		return { success: false, error: err.message };
@@ -280,7 +332,6 @@ async function handleActionRequest(message) {
 // 		restoreState.inProgress = false;
 // 	}
 // }
-
 
 /**
  *　JSONからのタブ復元用リクエストを処理する
@@ -294,9 +345,7 @@ async function handleRestoreRequest(data) {
 		let totalTabsToRestore = 0;
 		let simpleTabsCount    = 0; // ★★★ about:newtabなどを数えるカウンター ★★★
 
-		/**
-		 *
-		 */
+		/** 復元対象のタブ数を導出する */
 		function countTabs(nodes) {
 			for (const node of nodes) {
 				if (!node.url || !node.url.startsWith('about:') || ['about:blank', 'about:newtab', 'about:home'].includes(node.url)) {
@@ -336,52 +385,75 @@ async function handleRestoreRequest(data) {
 			});
 		}
 
+
+		let listener; // listener関数をPromiseの外でアクセスできるように
+		let timeoutId;  // timeoutIdも同様
+
 		const allTabsLoadedPromise = new Promise(resolve => {
-			const listener = (tabId, changeInfo, tab) => {
+			listener = (tabId, changeInfo, tab) => {
 				if (createdTabIds.has(tabId) && !loadedTabs.has(tabId)) {
-
-					// console.log(`★★★ Point1: URL="${tab.url}, changeInfo.status="${changeInfo.status}", changeInfo.title="${changeInfo.title}"`);
-
 					let isLoaded = false;
-					if (tab.status === 'complete' || (tab.title && tab.url && tab.title !== tab.url.replace(/^[^/]+:\/\//, '').substring(0, tab.title.length))) {
+					if (changeInfo.status === 'complete') {
 						isLoaded = true;
+					} else if (changeInfo.title) {
+						if (tab.url) {
+							const urlWithoutProtocol = tab.url.replace(/^[^/]+:\/\//, '');
+							let urlCut               = urlWithoutProtocol;
+							let titleCut             = changeInfo.title;
+							if (titleCut.length < urlWithoutProtocol.length) {
+								urlCut = urlWithoutProtocol.substring(0, titleCut.length);
+							} else {
+								titleCut = changeInfo.title.substring(0, urlWithoutProtocol.length);
+							}
+							if (titleCut !== urlCut) isLoaded = true;
+						} else {
+							isLoaded = true;
+						}
 					}
 					if (isLoaded) {
 						loadedTabs.add(tabId);
-						// ★★★ 読み込み完了数 ＋ 事前に数えた即時完了数 ★★★
-						restoreState.loaded = loadedTabs.size + simpleTabsCount;
-
-						const titleForLog = TmCommon.Funcs.CutStringByLength(tab.title, 70);
-						const urlForLog   = TmCommon.Funcs.CutStringByLength(tab.url, 80);
-						console.log(`読み込み完了: ${restoreState.loaded} / ${restoreState.total}: url="${urlForLog}", title="${titleForLog}"`);
-
+						// restoreState.loaded = loadedTabs.size + simpleTabsCount;
+						restoreState.loaded = loadedTabs.size;
+						const titleForLog   = TmCommon.Funcs.CutStringByLength(tab.title, 70);
+						const urlForLog     = TmCommon.Funcs.CutStringByLength(tab.url, 80);
+						console.log(`読み込み完了: ${restoreState.loaded} / ${restoreState.total}: tabId="${tabId}" url="${urlForLog}", title="${titleForLog}"`);
 						if (viewerTabId) {
 							browser.tabs.sendMessage(viewerTabId, {
 								type: 'update-progress',
-								loaded: restoreState.loaded, total: restoreState.total
+								loaded: restoreState.loaded,
+								total: restoreState.total
 							}).catch(e => {
-								console.errot('エラー発生', e);
+								console.error('viewer.jsへの進捗情報送信に失敗しました。', e);
 							});
 						}
 						if (restoreState.loaded >= totalTabsToRestore) {
-							browser.tabs.onUpdated.removeListener(listener);
-							clearTimeout(timeoutId);
-							resolve();
+							resolve(); // Promiseを解決
 						}
 					}
 				}
 			};
-			browser.tabs.onUpdated.addListener(listener, { properties: ["status", "title"] });
-			const timeoutId = setTimeout(() => {
+
+			timeoutId = setTimeout(() => {
 				console.warn(`復元処理がタイムアウトしました。`);
-				browser.tabs.onUpdated.removeListener(listener);
-				resolve();
+				resolve(); // タイムアウトしても、Promiseは解決させる
 			}, 60000);
 		});
 
+
+		// 1. まず、監視員を配置する
+		browser.tabs.onUpdated.addListener(listener, { properties: ["status", "title"] });
+
+		// 2. それから、事件を起こす
 		await restoreSubtree(data, null, createdTabIds);
+
+		// 3. 事件の完了を待つ
 		await allTabsLoadedPromise;
 
+		// 4. 後始末
+		browser.tabs.onUpdated.removeListener(listener);
+		clearTimeout(timeoutId);
+
+		console.log('すべてのタブの読み込み監視が完了しました。');
 		if (viewerTabId) {
 			await browser.tabs.sendMessage(viewerTabId, { type: 'refresh-view' });
 		}
@@ -690,12 +762,22 @@ async function restoreSubtree(nodes, parentId = null, createdTabsSet) {
 		try {
 			let urlToOpen = node.url;
 
-			if (!urlToOpen || urlToOpen === 'about:newtab' || urlToOpen === 'about:home') {
+
+			// #### ロジック修正 MOD START --
+			// if (!urlToOpen || urlToOpen === 'about:newtab' || urlToOpen === 'about:home') {
+			// 	urlToOpen = undefined;
+			// } else if (node.url.startsWith('about:') && node.url !== 'about:blank') {
+			// 	console.warn(`セキュリティ上の理由により、このタブは復元をスキップします: ${node.url}`);
+			// 	shouldSkip = true; // ★★★ スキップのフラグを立てる ★★★
+			// }
+
+			if (!urlToOpen || urlToOpen === 'about:newtab' || urlToOpen === 'about:home' || urlToOpen === 'about:home') {
 				urlToOpen = undefined;
-			} else if (node.url.startsWith('about:') && node.url !== 'about:blank') {
+			} else if (node.url.startsWith('about:')) {
 				console.warn(`セキュリティ上の理由により、このタブは復元をスキップします: ${node.url}`);
 				shouldSkip = true; // ★★★ スキップのフラグを立てる ★★★
 			}
+			// #### ロジック修正 MOD END --
 
 			if (!shouldSkip) {
 				newTab = await browser.tabs.create({
