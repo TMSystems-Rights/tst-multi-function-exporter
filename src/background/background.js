@@ -1,4 +1,12 @@
-// background.js (データ処理と全アクションを担当する「頭脳」)
+/**
+ * @file TST多機能エクスポーター - background.js
+ * @description
+ * この拡張機能の中核となるバックグラウンドスクリプトです。
+ * Tree Style Tab (TST) との通信、データのエクスポート（JSON/TSV）、
+ * そしてJSONファイルからのタブツリー復元といった、すべての主要なロジックを担います。
+ * 特にタブ復元機能は、onUpdatedイベントとタイムアウト後の補完処理を組み合わせた
+ * 堅牢なアーキテクチャを採用しています。
+ */
 
 /* global TmCommon */
 
@@ -21,13 +29,7 @@ let restoreState = {
 
 /**
  * 復元処理中に作成された、復元対象全ての各タブの状態を個別に管理するためのMap。
- * key: 作成されたタブのID (number)
- * value: {
- *   url: string,
- *   title: string,
- *   status: 'pending' | 'completed',
- *   lastUpdated: number (タイムスタンプ)
- * }
+ * @type {Map<number, {url: string, title: string, status: 'pending'|'completed', lastUpdated: number}>}
  */
 let createdTabsInfo = new Map();
 
@@ -120,9 +122,9 @@ browser.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
 // リクエストハンドラ
 // ===================================================
 /**
- * データ取得を伴うリクエストを処理する
- * @param {object} message
- * @returns {Promise<object>}
+ * データ取得を伴うリクエスト（エクスポート、ビューア表示）を処理します。
+ * @param {object} message - popup.jsまたはviewer.jsからのメッセージオブジェクト。
+ * @returns {Promise<object>} 処理結果。
  */
 async function handleDataRequest(message) {
 	try {
@@ -166,9 +168,9 @@ async function handleDataRequest(message) {
 }
 
 /**
- * データ取得を伴わないアクションリクエストを処理する
- * @param {object} message
- * @returns {Promise<object>}
+ * データ取得を伴わないアクション（タブのフォーカス、削除）を処理します。
+ * @param {object} message - viewer.jsからのメッセージオブジェクト。
+ * @returns {Promise<object>} 処理結果。
  */
 async function handleActionRequest(message) {
 	try {
@@ -231,8 +233,8 @@ async function handleRestoreRequest(data) {
 		const viewerTabId   = viewerTabs.length > 0 ? viewerTabs[0].id : null;
 
 		// --- 2. 監視の準備 ---
-		// プログレスバーの初期値を設定（即時完了分を反映）
-		restoreState.loaded = simpleTabsCount;
+		// プログレスバーの初期値を設定
+		restoreState.loaded = 0;
 		if (viewerTabId) {
 			browser.tabs.sendMessage(viewerTabId, {
 				type: 'update-progress',
@@ -403,7 +405,11 @@ function filterTree(nodes, predicate) {
 	return result;
 }
 
-/** ★★★ データファイル（JSON or TSV）をダウンロード ★★★ */
+/**
+ * 指定されたデータをファイル（JSON or TSV）としてダウンロードさせます。
+ * @param {string} data - ダウンロードするデータ本体。
+ * @param {string} filename - 保存するファイル名。
+ */
 async function downloadData(data, filename) {
 	const mimeType = filename.endsWith('.json') ? 'application/json;charset=utf-8' : 'text/tab-separated-values;charset=utf-8';
 	const blob     = new Blob([data], { type: mimeType });
@@ -422,7 +428,10 @@ async function downloadData(data, filename) {
 	}
 }
 
-/** ★★★指定のタブへフォーカス ★★★　*/
+/**
+ * 指定されたタブIDのタブにフォーカスを移動します。
+ * @param {number} tabId - フォーカスするタブのID。
+ */
 async function focusTab(tabId) {
 	try {
 		const tabToFocus = await browser.tabs.get(tabId);
@@ -434,7 +443,11 @@ async function focusTab(tabId) {
 	}
 }
 
-/** ★★★ JSONへの変換ロジック ★★★ */
+/**
+ * TSTから取得した生のタブ情報を、エクスポートに適したツリー構造（JSON形式）に変換します。
+ * @param {Array<object>} tabs - browser.runtime.sendMessage(TST_ID, { type: 'get-tree' })で取得したタブ情報。
+ * @returns {Array<object>} - 親子関係が整理されたツリー構造のデータ。
+ */
 function convertTreeForJSON(tabs) {
 	const tabMap    = new Map(tabs.map(tab => [tab.id, tab]));
 	const processed = new Set();
@@ -449,7 +462,13 @@ function convertTreeForJSON(tabs) {
 	return roots;
 }
 
-/** 階層ツリー作成 */
+/**
+ * 単一のタブ情報を、エクスポート用のノードオブジェクトに変換します（buildSubtreeの内部処理）。
+ * @param {object} tab - 変換元のタブオブジェクト。
+ * @param {Set<number>} processed - 処理済みのタブIDを記録するSet。
+ * @param {Map<number, object>} tabMap - タブIDをキーとするタブ情報のMap。
+ * @returns {object|null} - 変換後のノードオブジェクト。
+ */
 function buildSubtree(tab, processed, tabMap) {
 
 	if (processed.has(tab.id)) {
@@ -501,7 +520,11 @@ function buildSubtree(tab, processed, tabMap) {
 	return node;
 }
 
-/** ★★★ TSVへの変換ロジック ★★★ */
+/**
+ * エクスポート用のツリー構造データをTSV形式の文字列に変換します。
+ * @param {Array<object>} jsonData - convertTreeForJSONで生成されたツリー構造データ。
+ * @returns {string} - TSV形式の文字列。
+ */
 function convertTreeToTSV(jsonData) {
 	const flatList = [];
 	/**
