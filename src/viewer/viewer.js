@@ -1,8 +1,8 @@
 /**
- * @file TST多機能エクスポーター - viewer.js (最終完成版: ポーリング・アーキテクチャ)
+ * @file TST多機能エクスポーター - viewer.js (真の最終完成版: イベント駆動同期アーキテクチャ)
  * @description
- * background.jsに定期的に進捗を問い合わせる（ポーリング）ことで、
- * 高負荷な状況でも安定したUI更新を実現します。
+ * background.jsからの進捗通知(update-progress)を受け取り、UIを更新する。
+ * ポーリングは不要。
  */
 
 /* global TmCommon */
@@ -20,12 +20,6 @@ const spinner           = document.getElementById('spinner');
 const progressContainer = document.getElementById('progress-container');
 const loadingText       = document.getElementById('loading-text');
 const loadingContent    = document.querySelector('.loading-content');
-
-/**
- * background.jsの進捗をポーリングするためのインターバルID。
- * @type {number|null}
- */
-let progressInterval = null;
 
 // ===================================================
 // 初期化処理
@@ -50,15 +44,17 @@ function setupEventListeners() {
 	treeContainer.addEventListener('click', handleTreeClick);
 	treeContainer.addEventListener('contextmenu', handleTreeContextMenu);
 
+	// ★★★ [変更] メッセージリスナーを、プッシュ通知を受ける形に修正 ★★★
 	browser.runtime.onMessage.addListener((message) => {
 		if (message.type === 'refresh-view') {
-			console.log('バックグラウンドから最終更新通知を受信。ポーリングを停止し、再描画します。');
-			if (progressInterval) {
-				clearInterval(progressInterval);
-				progressInterval = null;
-			}
+			console.log('バックグラウンドから最終更新通知を受信。再描画します。');
 			setLoadingState(false);
 			renderTree(true);
+		} else if (message.type === 'update-progress') {
+			// background.jsから進捗が送られてくるたびにUIを更新
+			const percent            = message.total > 0 ? (message.loaded / message.total) * 100 : 0;
+			progressBar.style.width  = `${percent}%`;
+			progressText.textContent = `復元中: ${message.loaded} / ${message.total}`;
 		}
 	});
 }
@@ -147,50 +143,20 @@ async function renderTree(expandAfterRender = false, stateToRestore = null, isRe
 async function handleFileSelect(event) {
 	const file = event.target.files[0];
 	if (!file) return;
+
+	// UIを「復元モード」に切り替え
 	setLoadingState(true, 'restoring', 'viewerRestoring');
 	try {
 		const fileContent   = await file.text();
 		const tabsToRestore = JSON.parse(fileContent);
-		const response      = await browser.runtime.sendMessage({ type: 'restore-tabs', data: tabsToRestore });
-		if (response && response.success) {
-			if (progressInterval) clearInterval(progressInterval);
-			progressInterval = setInterval(updateProgressUI, 250);
-		} else {
-			throw new Error(response.error || '復元の開始に失敗しました。');
-		}
+		// background.jsに復元開始を依頼するだけ。進捗管理はbackground.jsに任せる。
+		await browser.runtime.sendMessage({ type: 'restore-tabs', data: tabsToRestore });
 	} catch (error) {
 		console.error('復元エラー:', error);
 		alert(TmCommon.Funcs.GetMsg("errorGeneric", error.message));
-		if (progressInterval) clearInterval(progressInterval);
-		progressInterval = null;
 		setLoadingState(false);
 	} finally {
 		event.target.value = '';
-	}
-}
-
-/**
- * 進捗をポーリングしてUIを更新します。
- */
-async function updateProgressUI() {
-	try {
-		const state = await browser.runtime.sendMessage({ type: 'get-restore-progress' });
-		if (state && state.inProgress) {
-			const percent            = state.total > 0 ? (state.loaded / state.total) * 100 : 0;
-			progressBar.style.width  = `${percent}%`;
-			progressText.textContent = `復元中: ${state.loaded} / ${state.total}`;
-		} else {
-			if (progressInterval) {
-				clearInterval(progressInterval);
-				progressInterval         = null;
-				progressBar.style.width  = '100%';
-				progressText.textContent = `復元完了: ${state.total} / ${state.total}`;
-			}
-		}
-	} catch (e) {
-		console.error("進捗の取得に失敗:", e);
-		if (progressInterval) clearInterval(progressInterval);
-		progressInterval = null;
 	}
 }
 

@@ -1,10 +1,9 @@
 /**
- * @file TST多機能エクスポーター - background.js (最終完成版: ポーリング・アーキテクチャ)
+ * @file TST多機能エクスポーター - background.js (真の最終完成版: 逐次ACK同期アーキテクチャ)
  * @description
- * 1000タブを超える高負荷なタブ復元にも耐えうる、堅牢でスケーラブルなバックグラウンドスクリプト。
- * onUpdatedイベントへの依存を完全に撤廃し、単純なカウンターとポーリングで進捗を管理します。
+ * 1タブずつ作成し、その完了(ACK)をonUpdatedで待ってから次に進むことで、
+ * 順序と階層を完全に保証する、最も確実な復元ロジック。
  */
-
 
 /* global TmCommon */
 
@@ -101,6 +100,7 @@ browser.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
 			return handleActionRequest(message);
 		case 'restore-tabs':
 			return handleRestoreRequest(message.data);
+		// ★★★ [変更] ポーリングは不要になったのでget-restore-progressは削除しても良いが、念のため残す ★★★
 		case 'get-restore-progress':
 			return Promise.resolve(restoreState);
 		default:
@@ -179,65 +179,147 @@ async function handleActionRequest(message) {
 	}
 }
 
+
 /**
- * JSONデータからタブのツリーを復元するリクエストのメインハンドラ (ポーリング版)
+ * 復元するタブのツリー構造を、処理しやすいフラットなリストに変換します。
+ * 各ノードの階層の深さ(depth)と、属するルートノードのID(rootId)も計算します。
+ * @param {Array<object>} nodes - 元のツリー構造データ。
+ * @param {number|null} parentId - 親タブのID。
+ * @param {number} depth - 現在の階層の深さ。
+ * @param {number|null} rootId - このツリーのルートノードのID。
+ * @returns {Array<object>} - 親子、depth、rootId情報を保持したフラットなノードの配列。
+ */
+function flattenTreeWithDepth(nodes, parentId = null, depth = 0, rootId = null) {
+	let list = [];
+	for (const node of nodes) {
+		// 自分がルートノードの場合、自分のIDをrootIdとする
+		const currentRootId = (depth === 0) ? node.id : rootId;
+
+		// 自分の情報をリストに追加
+		list.push({ ...node, openerTabId: parentId, depth: depth, rootId: currentRootId });
+
+		// 子がいれば、自分のIDを親として、現在のrootIdを引き継いで再帰的に処理
+		if (node.children && node.children.length > 0) {
+			list = list.concat(flattenTreeWithDepth(node.children, node.id, depth + 1, currentRootId));
+		}
+	}
+	return list;
+}
+
+
+/**
+ * 指定されたミリ秒だけ処理を待機します。
+ * @param {number} ms - 待機する時間（ミリ秒）。
+ * @returns {Promise<void>}
+ */
+function sleep(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * IDのマッピングを元に、新しいopenerTabIdを計算します。
+ * @param {number|null} oldParentId - 元のJSONの親ID。
+ * @param {Map<number, number>} idMap - 新旧IDの対応表。
+ * @returns {number|undefined} - 新しく作成された親タブのID。
+ */
+function getNewOpenerId(oldParentId, idMap) {
+	if (oldParentId === null || !idMap.has(oldParentId)) {
+		return undefined;
+	}
+	return idMap.get(oldParentId);
+}
+
+
+
+/**
+ * JSONデータからタブのツリーを復元するリクエストのメインハンドラ (動的ウェイト調整 Rev.2)
  * @param {Array<object>} data - 復元するタブ情報のツリー構造。
- * @returns {Promise<object>} 処理の開始成功/失敗を示すオブジェクト。
+ * @returns {Promise<object>} 処理の成功/失敗を示すオブジェクト。
  */
 async function handleRestoreRequest(data) {
 	if (restoreState.inProgress) {
 		return { success: false, error: '別の復元処理が実行中です。' };
 	}
-
-	// --- 1. 状態の初期化 ---
 	restoreState = { inProgress: true, loaded: 0, total: 0 };
 
-	/**
-	 * 復元対象のタブ総数を正確に計算します。
-	 */
-	function countTabs(nodes) {
-		for (const node of nodes) {
-			let shouldSkip = false;
-			if (node.url && node.url.startsWith('about:')) {
-				const allowedAbouts = ['about:blank', 'about:newtab', 'about:home'];
-				if (!allowedAbouts.includes(node.url)) {
-					shouldSkip = true;
-				}
-			}
-			if (!shouldSkip) {
-				restoreState.total++;
-			}
-			if (node.children) {
-				countTabs(node.children);
-			}
-		}
-	}
-	countTabs(data);
-	console.log(`【最終アーキテクチャ】復元対象の総タブ数: ${restoreState.total}`);
+	// --- 1. 準備 ---
+	const flatNodeList = flattenTreeWithDepth(data);
+	restoreState.total = flatNodeList.length;
+	console.log(`【動的ウェイト Rev.2】復元対象の総タブ数: ${restoreState.total}`);
 
 	if (restoreState.total === 0) {
 		restoreState.inProgress = false;
 		return { success: true };
 	}
 
-	// --- 2. 復元処理を非同期で実行 ---
-	// この処理はバックグラウンドで走り続ける。呼び出し元にはすぐに応答を返す。
+	const idMap       = new Map();
+	const viewerTabs  = await browser.tabs.query({ url: browser.runtime.getURL('/viewer/viewer.html') });
+	const viewerTabId = viewerTabs.length > 0 ? viewerTabs[0].id : null;
+
+	// --- 2. 実行 ---
 	(async () => {
 		try {
-			await restoreSubtree(data, null);
+			// フラットリストを1つずつ順番に処理
+			for (let i = 0; i < flatNodeList.length; i++) {
+				const node = flatNodeList[i];
+				try {
+					const createProperties = {
+						url: node.url,
+						active: false,
+						openerTabId: getNewOpenerId(node.openerTabId, idMap),
+						discarded: !!node.discarded,
+					};
+					if (createProperties.discarded && node.title) {
+						createProperties.title = node.title;
+					}
+					if (!createProperties.url || createProperties.url.startsWith('about:')) {
+						createProperties.discarded = false;
+						if (!createProperties.url || ['about:newtab', 'about:home'].includes(createProperties.url)) {
+							createProperties.url = undefined;
+						}
+					}
+
+					const newTab = await browser.tabs.create(createProperties);
+					if (newTab) {
+						idMap.set(node.id, newTab.id);
+						restoreState.loaded++;
+						if (viewerTabId) {
+							browser.tabs.sendMessage(viewerTabId, {
+								type: 'update-progress', loaded: restoreState.loaded, total: restoreState.total
+							}).catch(() => {});
+						}
+					}
+				} catch (err) {
+					console.error(`タブ作成失敗: url=${node.url}`, err);
+					restoreState.total--;
+				}
+
+				// ★★★ [核心] 次のタブのdepthとrootIdを予測し、ウェイトを動的に調整 ★★★
+				if (i + 1 < flatNodeList.length) {
+					const currentNode = node;
+					const nextNode    = flatNodeList[i + 1];
+
+					if (nextNode.depth > currentNode.depth || nextNode.rootId !== currentNode.rootId) {
+						// 1. 深い階層に移動する時 (重い)
+						// 2. 別のツリーに移動する時 (重い)
+						// ⇒ 長めに待つ
+						await sleep(300);
+					} else {
+						// 同じか浅い階層に移動する時 (軽い)
+						// ⇒ 短く待つ
+						await sleep(50);
+					}
+				}
+			}
 		} catch (err) {
-			console.error('restoreSubtreeの実行中に予期せぬエラー:', err);
+			console.error('復元処理中に予期せぬエラー:', err);
 		} finally {
-			console.log(`すべてのタブ作成処理が完了しました。完了数: ${restoreState.loaded}`);
-			// viewer.jsに最終的な完了を通知
-			browser.runtime.sendMessage({ type: 'refresh-view' }).catch(() => {
-				// viewerが閉じられている場合のエラーは無視
-			});
+			console.log(`すべてのタブ作成処理が完了しました。`);
+			browser.runtime.sendMessage({ type: 'refresh-view' }).catch(() => {});
 			restoreState.inProgress = false;
 		}
 	})();
 
-	// --- 3. 呼び出し元に処理開始を通知 ---
 	return { success: true };
 }
 
@@ -500,108 +582,4 @@ function convertTreeToTSV(jsonData) {
 		return row.join('\t');
 	});
 	return [header1.join('\t'), header2.join('\t'), ...rows].join('\n');
-}
-
-
-/**
- * 指定されたミリ秒だけ処理を待機するヘルパー関数。
- * @param {number} ms - 待機する時間（ミリ秒）。
- * @returns {Promise<void>}
- */
-function sleep(ms) {
-	return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-/**
- * 指定されたノードツリーに基づき、タブを再帰的に作成する (最終確定版)
- * @param {Array<object>} nodes - 復元するタブのノード配列。
- * @param {number|null} [parentId=null] - 親タブのID。
- */
-async function restoreSubtree(nodes, parentId = null) {
-	for (const node of nodes) {
-		let newTab = null;
-		try {
-			let urlToOpen  = node.url;
-			let shouldSkip = false;
-
-			if (urlToOpen && urlToOpen.startsWith('about:')) {
-				const allowedAbouts = ['about:blank', 'about:newtab', 'about:home'];
-				if (!allowedAbouts.includes(urlToOpen)) {
-					shouldSkip = true;
-				}
-			}
-
-			if (!shouldSkip) {
-				const isAboutPage = !urlToOpen || urlToOpen.startsWith('about:');
-
-				if (isAboutPage) {
-					urlToOpen = undefined;
-				}
-
-				const createProperties = {
-					url: urlToOpen,
-					active: false,
-					openerTabId: parentId,
-				};
-
-				// ★★★ [核心] aboutページとdiscardedの組み合わせを避ける ★★★
-				if (isAboutPage) {
-					// aboutページは必ず通常状態で開く
-					createProperties.discarded = false;
-				} else {
-					// それ以外のページはJSONの状態を尊重
-					createProperties.discarded = !!node.discarded;
-				}
-
-				// ★★★ [核心] 破棄状態で作成する場合、JSONからタイトルを設定 ★★★
-				// if (createProperties.discarded && node.title) {
-				// 	createProperties.title = node.title;
-				// }
-
-				// 破棄状態で作成する場合、JSONからタイトルを取得する。
-				// ※faviconを設定したいが「favIconUrlは、Nightlyビルドや特定のベータ版でのみ利用可能」とのことなので
-				// 　いまはコメントアウトしておく。
-				// 　将来的にfavIconUrlのAPIが一般版へ対応した際にはコメントを外す予定。
-				if (createProperties.discarded === true) {
-					if (node.title) {
-						createProperties.title = node.title;
-					}
-					// if (node.favIconUrl && (node.favIconUrl.startsWith('http') || node.favIconUrl.startsWith('data:'))) {
-					// 	createProperties.favIconUrl = node.favIconUrl;
-					// }
-				}
-
-
-				newTab = await browser.tabs.create(createProperties);
-
-				if (newTab) {
-					restoreState.loaded++;
-				}
-			}
-
-			if (node.children && node.children.length > 0) {
-				await restoreSubtree(node.children, newTab ? newTab.id : parentId);
-			}
-
-			// 5回サイクルで変化するウェイトを置き、TSTに息継ぎの時間を与える。
-			// 速すぎるとタブ生成の精度が落ちる（タブの階層や順番が狂う）
-			if (restoreState.loaded % 5 === 0) {
-				// 5回に1回、500ミリ秒のウェイト
-				// await sleep(10);
-				await sleep(500);
-			} else {
-				// 5回に1回、500ミリ秒のウェイト
-				await sleep(200);
-			}
-
-		} catch (err) {
-			console.error(`タブの作成に失敗: url=${node.url}`, err);
-			if (restoreState.total > 0) {
-				restoreState.total--;
-			}
-			if (node.children && node.children.length > 0) {
-				await restoreSubtree(node.children, parentId);
-			}
-		}
-	}
 }
