@@ -583,10 +583,15 @@ async function restoreSubtree(nodes, parentId = null) {
 				await restoreSubtree(node.children, newTab ? newTab.id : parentId);
 			}
 
-			// 10タブ作成するごとに10ミリ秒だけ待機し、TSTに息継ぎの時間を与える。
-			if (restoreState.loaded % 10 === 0) {
+			// 5回サイクルで変化するウェイトを置き、TSTに息継ぎの時間を与える。
+			// 速すぎるとタブ生成の精度が落ちる（タブの階層や順番が狂う）
+			if (restoreState.loaded % 5 === 0) {
+				// 5回に1回、500ミリ秒のウェイト
 				// await sleep(10);
 				await sleep(500);
+			} else {
+				// 5回に1回、500ミリ秒のウェイト
+				await sleep(200);
 			}
 
 		} catch (err) {
