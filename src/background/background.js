@@ -1,12 +1,10 @@
 /**
- * @file TST多機能エクスポーター - background.js
+ * @file TST多機能エクスポーター - background.js (最終完成版: ポーリング・アーキテクチャ)
  * @description
- * この拡張機能の中核となるバックグラウンドスクリプトです。
- * Tree Style Tab (TST) との通信、データのエクスポート（JSON/TSV）、
- * そしてJSONファイルからのタブツリー復元といった、すべての主要なロジックを担います。
- * 特にタブ復元機能は、onUpdatedイベントとタイムアウト後の補完処理を組み合わせた
- * 堅牢なアーキテクチャを採用しています。
+ * 1000タブを超える高負荷なタブ復元にも耐えうる、堅牢でスケーラブルなバックグラウンドスクリプト。
+ * onUpdatedイベントへの依存を完全に撤廃し、単純なカウンターとポーリングで進捗を管理します。
  */
+
 
 /* global TmCommon */
 
@@ -16,7 +14,8 @@ const TST_ID = TmCommon.Const.TST_ID;
 // グローバルな状態管理
 // ===================================================
 /**
- * タブ復元処理全体（変更検知対象のみ）の進捗を管理するオブジェクト。
+ * タブ復元処理の進捗を管理する、極めてシンプルなグローバルオブジェクト。
+ * viewer.jsからのポーリングに対して、このオブジェクトを返します。
  * @property {boolean} inProgress - 復元処理が進行中かどうか。
  * @property {number} loaded - 読み込みが完了したタブの数。
  * @property {number} total - 復元対象の総タブ数。
@@ -26,12 +25,6 @@ let restoreState = {
 	loaded: 0,
 	total: 0
 };
-
-/**
- * 復元処理中に作成された、復元対象全ての各タブの状態を個別に管理するためのMap。
- * @type {Map<number, {url: string, title: string, status: 'pending'|'completed', lastUpdated: number}>}
- */
-let createdTabsInfo = new Map();
 
 // ======================================================
 // アイコンURL定義 ※TSTのfavicon表示仕様にあわせています。
@@ -187,199 +180,67 @@ async function handleActionRequest(message) {
 }
 
 /**
- * JSONデータからタブのツリーを復元するリクエストのメインハンドラ。
- * onUpdatedイベントによる監視と、タイムアウト後の補完処理を組み合わせた堅牢なアーキテクチャ。
+ * JSONデータからタブのツリーを復元するリクエストのメインハンドラ (ポーリング版)
  * @param {Array<object>} data - 復元するタブ情報のツリー構造。
- * @returns {Promise<object>} 処理の成功/失敗を示すオブジェクト。
+ * @returns {Promise<object>} 処理の開始成功/失敗を示すオブジェクト。
  */
 async function handleRestoreRequest(data) {
-	try {
-		// --- 1. 状態の初期化 ---
-		restoreState = { inProgress: true, loaded: 0, total: 0 };
-		createdTabsInfo.clear(); // 前回の情報が残らないようにクリア
-
-		let totalTabsToRestore = 0;
-		let simpleTabsCount    = 0; // about:newtab など、即時完了と見なせるタブの数
-
-		/** 復元対象のタブ総数を計算する内部関数 */
-		function countTabs(nodes) {
-			for (const node of nodes) {
-				// 特権about:ページ（復元不可）以外をカウント対象とする
-				if (!node.url || !node.url.startsWith('about:') || ['about:blank', 'about:newtab', 'about:home'].includes(node.url)) {
-					totalTabsToRestore++;
-					// その中でも特に、onUpdatedでの検知が難しいタブを「即時完了」として事前に数えておく
-					if (!node.url || ['about:newtab'].includes(node.url)) {
-						simpleTabsCount++;
-					}
-				}
-				if (node.children) {
-					countTabs(node.children);
-				}
-			}
-		}
-		countTabs(data);
-		restoreState.total = totalTabsToRestore;
-
-		console.log(`復元対象: ${totalTabsToRestore} (うち即時完了: ${simpleTabsCount})`);
-		if (totalTabsToRestore === 0) {
-			restoreState.inProgress = false;
-			return { success: true };
-		}
-
-		const loadedTabs    = new Set();    // onUpdatedで完了を検知したタブIDを記録
-		const createdTabIds = new Set();    // restoreSubtreeで作成された全てのタブIDを記録
-		const viewerUrl     = browser.runtime.getURL('/viewer/viewer.html');
-		const viewerTabs    = await browser.tabs.query({ url: viewerUrl });
-		const viewerTabId   = viewerTabs.length > 0 ? viewerTabs[0].id : null;
-
-		// --- 2. 監視の準備 ---
-		// プログレスバーの初期値を設定
-		restoreState.loaded = 0;
-		if (viewerTabId) {
-			browser.tabs.sendMessage(viewerTabId, {
-				type: 'update-progress',
-				loaded: restoreState.loaded,
-				total: restoreState.total
-			}).catch(e => {
-				console.error('viewer.jsへの初期進捗送信に失敗:', e);
-			});
-		}
-
-		let listener;
-		let timeoutId;
-
-		// --- 3. onUpdatedによるメイン監視処理 ---
-		const allTabsLoadedPromise = new Promise(resolve => {
-			let resolved = false;
-
-			/** 監視を安全に終了させるための関数 */
-			function done() {
-				if (resolved) {
-					return;
-				}
-				resolved = true;
-				clearTimeout(timeoutId);
-				browser.tabs.onUpdated.removeListener(listener);
-				resolve();
-			}
-
-			/** タブの更新を検知するリスナー */
-			listener = (tabId, changeInfo, tab) => {
-				// 自身が作成し、まだ完了していないタブのみを対象とする
-				if (createdTabIds.has(tabId) && !loadedTabs.has(tabId)) {
-					let isLoaded = false;
-					// [完了判定ロジック1] statusが'complete'になったら完了
-					if (changeInfo.status === 'complete') {
-						isLoaded = true;
-					// [完了判定ロジック2] タイトルが変更された場合
-					} else if (changeInfo.title) {
-						// URLを持つタブの場合、タイトルがURLとは異なる内容になれば完了と見なす
-						// (alert()で止まるページなども、タイトルが先に設定されればここで検知できる)
-						if (tab.url) {
-							const urlWithoutProtocol = tab.url.replace(/^[^/]+:\/\//, '');
-							let urlCut               = urlWithoutProtocol;
-							let titleCut             = changeInfo.title;
-							if (titleCut.length < urlWithoutProtocol.length) {
-								urlCut = urlWithoutProtocol.substring(0, titleCut.length);
-							} else {
-								titleCut = changeInfo.title.substring(0, urlWithoutProtocol.length);
-							}
-							if (titleCut !== urlCut) {
-								isLoaded = true;
-							}
-						// URLを持たないタブ(about:newtabなど)は、何らかのタイトルがつけば完了
-						} else {
-							isLoaded = true;
-						}
-					}
-
-					// 完了と判定された場合の処理
-					if (isLoaded) {
-						loadedTabs.add(tabId);
-						const tabInfo = createdTabsInfo.get(tabId);
-						if (tabInfo) {
-							tabInfo.status = 'completed'; // 状態管理Mapを更新
-						}
-
-						// loadedTabs.sizeを読み込み完了数とする
-						restoreState.loaded = loadedTabs.size;
-
-						// ログ出力
-						const titleForLog = TmCommon.Funcs.CutStringByLength(tab.title, 70);
-						const urlForLog   = TmCommon.Funcs.CutStringByLength(tab.url, 80);
-						console.log(`読み込み完了: ${restoreState.loaded} / ${restoreState.total}: tabId="${tabId}" url="${urlForLog}", title="${titleForLog}"`);
-
-						// viewer.jsに進捗を通知
-						if (viewerTabId) {
-							browser.tabs.sendMessage(viewerTabId, {
-								type: 'update-progress',
-								loaded: restoreState.loaded,
-								total: restoreState.total
-							}).catch(e => {
-								console.error('viewer.jsへの進捗情報送信に失敗しました。', e);
-							});
-						}
-
-						// 全てのタブが完了したら、監視を即時終了
-						if (restoreState.loaded >= totalTabsToRestore) {
-							console.log(`分母に達しました。監視を終了します。`);
-							done();
-						}
-					}
-				}
-			};
-
-			// 安全装置としてのタイムアウト。30秒間onUpdatedイベントがなければ監視を打ち切る。
-			timeoutId = setTimeout(() => {
-				console.warn(`復元処理がタイムアウトしました。`);
-				done();
-			}, 30000);
-		});
-
-		// --- 4. 処理の実行 ---
-		console.log('1. 監視員を配置します');
-		browser.tabs.onUpdated.addListener(listener, { properties: ["status", "title"] });
-		console.log('2. 事件を起こします (タブ作成開始)');
-		await restoreSubtree(data, null, createdTabIds);
-		console.log('3. 事件の完了を待ちます');
-		await allTabsLoadedPromise;
-
-		// --- 5. onUpdatedで検知漏れしたタブの補完処理 ---
-		console.log('4. 監視から漏れたタブを補完します');
-		for (const [tabId, tabInfo] of createdTabsInfo.entries()) {
-			// 状態が'pending'のまま残っているタブ（主にabout:blank）を対象
-			if (tabInfo.status === 'pending') {
-				restoreState.loaded++;
-				const titleForLog = TmCommon.Funcs.CutStringByLength(tabInfo.title, 70);
-				const urlForLog   = TmCommon.Funcs.CutStringByLength(tabInfo.url, 80);
-				console.log(`読み込み完了[補完処理]: ${restoreState.loaded} / ${restoreState.total}: tabId="${tabId}" url="${urlForLog}", title="${titleForLog}"`);
-
-				// viewer.jsに進捗を通知
-				if (viewerTabId) {
-					browser.tabs.sendMessage(viewerTabId, {
-						type: 'update-progress',
-						loaded: restoreState.loaded,
-						total: restoreState.total
-					}).catch(e => {
-						console.error('[補完処理] 進捗送信エラー:', e);
-					});
-				}
-			}
-		}
-
-		// --- 6. 最終通知 ---
-		console.log('すべてのタブの読み込み処理が完了しました。');
-		if (viewerTabId) {
-			// viewer.jsに最終的な再描画を指示
-			await browser.tabs.sendMessage(viewerTabId, { type: 'refresh-view' });
-		}
-	} catch (err) {
-		console.error('handleRestoreRequestでエラー:', err);
-		return { success: false, error: err.message };
-	} finally {
-		restoreState.inProgress = false; // どのような場合でも処理中フラグを解除
+	if (restoreState.inProgress) {
+		return { success: false, error: '別の復元処理が実行中です。' };
 	}
+
+	// --- 1. 状態の初期化 ---
+	restoreState = { inProgress: true, loaded: 0, total: 0 };
+
+	/**
+	 * 復元対象のタブ総数を正確に計算します。
+	 */
+	function countTabs(nodes) {
+		for (const node of nodes) {
+			let shouldSkip = false;
+			if (node.url && node.url.startsWith('about:')) {
+				const allowedAbouts = ['about:blank', 'about:newtab', 'about:home'];
+				if (!allowedAbouts.includes(node.url)) {
+					shouldSkip = true;
+				}
+			}
+			if (!shouldSkip) {
+				restoreState.total++;
+			}
+			if (node.children) {
+				countTabs(node.children);
+			}
+		}
+	}
+	countTabs(data);
+	console.log(`【最終アーキテクチャ】復元対象の総タブ数: ${restoreState.total}`);
+
+	if (restoreState.total === 0) {
+		restoreState.inProgress = false;
+		return { success: true };
+	}
+
+	// --- 2. 復元処理を非同期で実行 ---
+	// この処理はバックグラウンドで走り続ける。呼び出し元にはすぐに応答を返す。
+	(async () => {
+		try {
+			await restoreSubtree(data, null);
+		} catch (err) {
+			console.error('restoreSubtreeの実行中に予期せぬエラー:', err);
+		} finally {
+			console.log(`すべてのタブ作成処理が完了しました。完了数: ${restoreState.loaded}`);
+			// viewer.jsに最終的な完了を通知
+			browser.runtime.sendMessage({ type: 'refresh-view' }).catch(() => {
+				// viewerが閉じられている場合のエラーは無視
+			});
+			restoreState.inProgress = false;
+		}
+	})();
+
+	// --- 3. 呼び出し元に処理開始を通知 ---
+	return { success: true };
 }
+
 
 // ===================================================
 // ヘルパー関数群
@@ -643,59 +504,98 @@ function convertTreeToTSV(jsonData) {
 
 
 /**
- * 指定されたノードツリーに基づき、タブを再帰的に作成する。
- * @param {Array<object>} nodes - 復元するタブのノード配列。
- * @param {number|null} [parentId=null] - 親タブのID。TSTでの親子関係構築に必要。
- * @param {Set<number>} createdTabsSet - 作成したタブのIDを記録するためのSetオブジェクト。
+ * 指定されたミリ秒だけ処理を待機するヘルパー関数。
+ * @param {number} ms - 待機する時間（ミリ秒）。
+ * @returns {Promise<void>}
  */
-async function restoreSubtree(nodes, parentId = null, createdTabsSet) {
+function sleep(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * 指定されたノードツリーに基づき、タブを再帰的に作成する (最終確定版)
+ * @param {Array<object>} nodes - 復元するタブのノード配列。
+ * @param {number|null} [parentId=null] - 親タブのID。
+ */
+async function restoreSubtree(nodes, parentId = null) {
 	for (const node of nodes) {
-		let newTab     = null;
-		let shouldSkip = false;
-
+		let newTab = null;
 		try {
-			let urlToOpen = node.url;
+			let urlToOpen  = node.url;
+			let shouldSkip = false;
 
-			// about:newtab, about:home, about:blank はURL指定なしで開くのが適切な挙動
-			if (!urlToOpen || ['about:newtab', 'about:home', 'about:blank'].includes(urlToOpen)) {
-				urlToOpen = undefined;
-			// 上記以外の特権about:ページはセキュリティ上の理由で復元をスキップ
-			} else if (node.url.startsWith('about:')) {
-				console.warn(`セキュリティ上の理由により、このタブは復元をスキップします: ${node.url}`);
-				shouldSkip = true;
-			}
-
-			if (!shouldSkip) {
-				newTab = await browser.tabs.create({
-					url: urlToOpen,
-					active: false,        // 復元時はバックグラウンドで開く
-					openerTabId: parentId // これが親子関係を決定する
-				});
-
-				if (newTab) {
-					// 作成したタブのIDを記録し、onUpdatedリスナーの監視対象とする
-					createdTabsSet.add(newTab.id);
-
-					// 状態管理Mapに、このタブの初期状態を'pending'として登録
-					createdTabsInfo.set(newTab.id, {
-						url: newTab.url,
-						title: newTab.title,
-						status: 'pending',
-						lastUpdated: Date.now()
-					});
+			if (urlToOpen && urlToOpen.startsWith('about:')) {
+				const allowedAbouts = ['about:blank', 'about:newtab', 'about:home'];
+				if (!allowedAbouts.includes(urlToOpen)) {
+					shouldSkip = true;
 				}
 			}
 
-			// 子ノードがあれば、再帰的に処理を呼び出す
-			if (node.children && node.children.length > 0) {
-				// 親がスキップされた場合、newTabはnullになる。その場合は子は祖父(parentId)の子として復元される。
-				await restoreSubtree(node.children, newTab ? newTab.id : parentId, createdTabsSet);
+			if (!shouldSkip) {
+				const isAboutPage = !urlToOpen || urlToOpen.startsWith('about:');
+
+				if (isAboutPage) {
+					urlToOpen = undefined;
+				}
+
+				const createProperties = {
+					url: urlToOpen,
+					active: false,
+					openerTabId: parentId,
+				};
+
+				// ★★★ [核心] aboutページとdiscardedの組み合わせを避ける ★★★
+				if (isAboutPage) {
+					// aboutページは必ず通常状態で開く
+					createProperties.discarded = false;
+				} else {
+					// それ以外のページはJSONの状態を尊重
+					createProperties.discarded = !!node.discarded;
+				}
+
+				// ★★★ [核心] 破棄状態で作成する場合、JSONからタイトルを設定 ★★★
+				// if (createProperties.discarded && node.title) {
+				// 	createProperties.title = node.title;
+				// }
+
+				// 破棄状態で作成する場合、JSONからタイトルを取得する。
+				// ※faviconを設定したいが「favIconUrlは、Nightlyビルドや特定のベータ版でのみ利用可能」とのことなので
+				// 　いまはコメントアウトしておく。
+				// 　将来的にfavIconUrlのAPIが一般版へ対応した際にはコメントを外す予定。
+				if (createProperties.discarded === true) {
+					if (node.title) {
+						createProperties.title = node.title;
+					}
+					// if (node.favIconUrl && (node.favIconUrl.startsWith('http') || node.favIconUrl.startsWith('data:'))) {
+					// 	createProperties.favIconUrl = node.favIconUrl;
+					// }
+				}
+
+
+				newTab = await browser.tabs.create(createProperties);
+
+				if (newTab) {
+					restoreState.loaded++;
+				}
 			}
-		} catch (err) {
-			console.error(`タブの作成プロセスでエラーが発生しました: url=${node.url}`, err);
-			// エラーが発生しても処理を止めず、子タブの復元は試みる
+
 			if (node.children && node.children.length > 0) {
-				await restoreSubtree(node.children, parentId, createdTabsSet);
+				await restoreSubtree(node.children, newTab ? newTab.id : parentId);
+			}
+
+			// 10タブ作成するごとに10ミリ秒だけ待機し、TSTに息継ぎの時間を与える。
+			if (restoreState.loaded % 10 === 0) {
+				// await sleep(10);
+				await sleep(500);
+			}
+
+		} catch (err) {
+			console.error(`タブの作成に失敗: url=${node.url}`, err);
+			if (restoreState.total > 0) {
+				restoreState.total--;
+			}
+			if (node.children && node.children.length > 0) {
+				await restoreSubtree(node.children, parentId);
 			}
 		}
 	}
