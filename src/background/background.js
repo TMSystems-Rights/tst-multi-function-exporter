@@ -1,8 +1,8 @@
 /**
- * @file TST多機能エクスポーター - background.js (真の最終完成版: 逐次ACK同期アーキテクチャ)
+ * @file TST多機能エクスポーター - background.js (最終確定版: トップノード単位・逐次実行)
  * @description
- * 1タブずつ作成し、その完了(ACK)をonUpdatedで待ってから次に進むことで、
- * 順序と階層を完全に保証する、最も確実な復元ロジック。
+ * 巨大な復元タスクをトップレベルのツリー単位に分割し、逐次実行することで、
+ * 数千タブの復元においても、パフォーマンスと安定性を最高レベルで維持する究極の実装。
  */
 
 /* global TmCommon */
@@ -232,9 +232,8 @@ function getNewOpenerId(oldParentId, idMap) {
 
 
 /**
- * JSONデータからタブのツリーを復元するリクエストのメインハンドラ (動的ウェイト調整 Rev.2)
- * @param {Array<object>} data - 復元するタブ情報のツリー構造。
- * @returns {Promise<object>} 処理の成功/失敗を示すオブジェクト。
+ * JSONデータからタブのツリーを復元するリクエストの司令塔 (真の最終確定版)
+ * @param {Array<object>} data
  */
 async function handleRestoreRequest(data) {
 	if (restoreState.inProgress) {
@@ -242,79 +241,38 @@ async function handleRestoreRequest(data) {
 	}
 	restoreState = { inProgress: true, loaded: 0, total: 0 };
 
-	// --- 1. 準備 ---
 	const flatNodeList = flattenTreeWithDepth(data);
 	restoreState.total = flatNodeList.length;
-	console.log(`【動的ウェイト Rev.2】復元対象の総タブ数: ${restoreState.total}`);
-
+	console.log(`【真の最終版】復元対象の総タブ数: ${restoreState.total}`);
 	if (restoreState.total === 0) {
 		restoreState.inProgress = false;
 		return { success: true };
 	}
 
-	const idMap       = new Map();
+	const executionQueue = [];
+	for (const rootNode of data) {
+		const rootNodeWithoutChildren = { ...rootNode, children: [] };
+		executionQueue.push({ node: rootNodeWithoutChildren, openerTabId: null });
+		if (rootNode.children && rootNode.children.length > 0) {
+			for (const secondLevelNode of rootNode.children) {
+				executionQueue.push({ node: secondLevelNode, openerTabId: rootNode.id });
+			}
+		}
+	}
+
 	const viewerTabs  = await browser.tabs.query({ url: browser.runtime.getURL('/viewer/viewer.html') });
 	const viewerTabId = viewerTabs.length > 0 ? viewerTabs[0].id : null;
 
-	// --- 2. 実行 ---
 	(async () => {
+		const idMap = new Map();
 		try {
-			// フラットリストを1つずつ順番に処理
-			for (let i = 0; i < flatNodeList.length; i++) {
-				const node = flatNodeList[i];
-				try {
-					const createProperties = {
-						url: node.url,
-						active: false,
-						openerTabId: getNewOpenerId(node.openerTabId, idMap),
-						discarded: !!node.discarded,
-					};
-					if (createProperties.discarded && node.title) {
-						createProperties.title = node.title;
-					}
-					if (!createProperties.url || createProperties.url.startsWith('about:')) {
-						createProperties.discarded = false;
-						if (!createProperties.url || ['about:newtab', 'about:home'].includes(createProperties.url)) {
-							createProperties.url = undefined;
-						}
-					}
-
-					const newTab = await browser.tabs.create(createProperties);
-					if (newTab) {
-						idMap.set(node.id, newTab.id);
-						restoreState.loaded++;
-						if (viewerTabId) {
-							browser.tabs.sendMessage(viewerTabId, {
-								type: 'update-progress', loaded: restoreState.loaded, total: restoreState.total
-							}).catch(() => {});
-						}
-					}
-				} catch (err) {
-					console.error(`タブ作成失敗: url=${node.url}`, err);
-					restoreState.total--;
-				}
-
-				// ★★★ [核心] 次のタブのdepthとrootIdを予測し、ウェイトを動的に調整 ★★★
-				if (i + 1 < flatNodeList.length) {
-					const currentNode = node;
-					const nextNode    = flatNodeList[i + 1];
-
-					if (nextNode.depth > currentNode.depth || nextNode.rootId !== currentNode.rootId) {
-						// 1. 深い階層に移動する時 (重い)
-						// 2. 別のツリーに移動する時 (重い)
-						// ⇒ 長めに待つ
-						await sleep(300);
-					} else {
-						// 同じか浅い階層に移動する時 (軽い)
-						// ⇒ 短く待つ
-						await sleep(50);
-					}
-				}
+			for (const executionUnit of executionQueue) {
+				const parentId = getNewOpenerId(executionUnit.openerTabId, idMap);
+				// restoreSingleTreeに、黄金比ディレイの実行を完全に委ねる
+				await restoreSingleTree([executionUnit.node], viewerTabId, idMap, parentId);
 			}
-		} catch (err) {
-			console.error('復元処理中に予期せぬエラー:', err);
 		} finally {
-			console.log(`すべてのタブ作成処理が完了しました。`);
+			console.log(`すべての復元処理が完了しました。`);
 			browser.runtime.sendMessage({ type: 'refresh-view' }).catch(() => {});
 			restoreState.inProgress = false;
 		}
@@ -323,6 +281,85 @@ async function handleRestoreRequest(data) {
 	return { success: true };
 }
 
+/**
+ * 単一のツリー（または枝）を、黄金比ディレイを使いながら復元する再帰関数 (about:エラー対応版)
+ * @param {Array<object>} nodes
+ *- @param {number|null} viewerTabId
+ * @param {Map<number, number>} idMap
+ * @param {number|undefined} parentId
+ */
+async function restoreSingleTree(nodes, viewerTabId, idMap, parentId) {
+	for (const node of nodes) {
+		let newTab = null;
+		try {
+			// ★★★ [最後の仕上げ] about:系ページのエラー回避ロジックをここに集約 ★★★
+			const createProperties = {
+				url: node.url,
+				active: false,
+				openerTabId: parentId,
+				discarded: !!node.discarded,
+			};
+
+			// [対策1] 不正なabout:ページを代替ページに置き換える
+			const isProblematicAbout = node.url && node.url.startsWith('about:') && !['about:blank', 'about:newtab', 'about:home'].includes(node.url);
+			if (isProblematicAbout) {
+				console.warn(`安全のため、${node.url} は代替ページとして復元します。`);
+				const originalUrl          = encodeURIComponent(node.url);
+				const originalTitle        = encodeURIComponent(node.title || 'タイトルなし');
+				createProperties.url       = browser.runtime.getURL(`/viewer/placeholder.html?url=${originalUrl}&title=${originalTitle}`);
+				createProperties.discarded = false; // 代替ページは通常状態で開く
+			}
+
+			// about:newtab, about:home は URL 指定なしで開く
+			if (!createProperties.url || ['about:newtab', 'about:home'].includes(createProperties.url)) {
+				createProperties.url = undefined;
+			}
+
+			const isAboutPage = createProperties.url === undefined || (typeof createProperties.url === 'string' && createProperties.url.startsWith('about:'));
+
+			// aboutページは破棄状態で開けない
+			if (isAboutPage) {
+				createProperties.discarded = false;
+			}
+
+			// [対策2] discardedがtrueの場合にのみ、titleを設定する
+			if (createProperties.discarded === true) {
+				if (node.title) {
+					createProperties.title = node.title;
+				}
+			} else {
+				// 通常状態で開く場合、titleプロパティは指定できない
+				delete createProperties.title;
+			}
+			// ★★★ エラー回避ロジックここまで ★★★
+
+			newTab = await browser.tabs.create(createProperties);
+			if (newTab) {
+				idMap.set(node.id, newTab.id);
+				restoreState.loaded++;
+				if (viewerTabId) {
+					browser.tabs.sendMessage(viewerTabId, {
+						type: 'update-progress', loaded: restoreState.loaded, total: restoreState.total
+					}).catch(() => {});
+				}
+			}
+		} catch (err) {
+			console.error(`タブ作成失敗: url=${node.url}`, err);
+			restoreState.total--;
+		}
+
+		// 黄金比ディレイ
+		if (restoreState.loaded % 5 === 0) {
+			await sleep(500);
+		} else {
+			await sleep(200);
+		}
+
+		if (node.children && node.children.length > 0) {
+			await restoreSingleTree(node.children, viewerTabId, idMap, newTab ? newTab.id : parentId);
+		}
+	}
+}
 
 // ===================================================
 // ヘルパー関数群

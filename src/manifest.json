@@ -38,7 +38,9 @@
 				"viewer/viewer.html",
 				"viewer/viewer.js",
 				"viewer/viewer.css",
-				"viewer/svg/*.svg"
+				"viewer/svg/*.svg",
+				"viewer/placeholder.html",
+				"viewer/placeholder.js"
 			],
 			"matches": [
 				"<all_urls>"
