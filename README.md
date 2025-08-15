@@ -2,9 +2,11 @@
 
 **Tree Style Tab (TST) のための、便利なタブ管理コンソール。Firefoxブラウザ用拡張機能です。**
 タブのツリー構造を、多彩な形式でエクスポートし、強力なライブビューアで閲覧・操作できます。
+また、バージョン2.1.0以降では、JSONファイルを使用しタブを完全復元することができます。
 
 **An Convenient tab management console for Tree Style Tab (TST). For Firefox web browser.**
 Export your tab tree in various formats, and browse/operate it with a powerful live viewer.
+Also, from version 2.1.0 onwards, you can fully restore tabs using a JSON file.
 
 ### ＝＝＝ ビューア画面 ＝＝＝
 <img width="500" height="700" alt="image" src="https://github.com/user-attachments/assets/1e6e2fb1-3b84-4576-b9e9-dc4757dc9e33" />
