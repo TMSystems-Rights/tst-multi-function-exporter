@@ -166,142 +166,7 @@ const TmBackground = {
 		 * @param {Array<object>} windowsData - ウィンドウ情報の配列 [{ windowId, focused, tabs:[...] }, ...]
 		 */
 		handleRestoreRequest: async function (windowsData) {
-		// 	// (前半のコードは変更なしなので省略)
-		// 	if (TmBackground.State.restoreState.inProgress) {
-		// 		return { success: false, error: '別の復元処理が実行中です。' };
-		// 	}
-		// 	const tabsSortedByHierarchy = windowsData.flatMap(w => TmBackground.Helpers.flattenTreeWithDepth(w.tabs || [])).sort((a, b) => {
-		// 		if (a.depth < b.depth) return -1; if (a.depth > b.depth) return 1; if (a.index < b.index) return -1; if (a.index > b.index) return 1; return 0;
-		// 	});
-		// 	const tabsSortedByIndex     = [...tabsSortedByHierarchy].sort((a, b) => a.index - b.index);
-		// 	if (tabsSortedByHierarchy.length === 0) {
-		// 		return { success: true };
-		// 	}
-		// 	TmBackground.State.restoreState = { inProgress: true, loaded: 0, total: tabsSortedByHierarchy.length };
-		// 	console.log(`【最終完成版: 明示的展開】復元対象の総タブ数: ${TmBackground.State.restoreState.total}`);
-		// 	const viewerTabs     = await browser.tabs.query({ url: browser.runtime.getURL('/viewer/viewer.html') });
-		// 	const viewerTabId    = viewerTabs.length > 0 ? viewerTabs[0].id : null;
-		// 	const currentWindow  = await browser.windows.getCurrent({ populate: false });
-		// 	const targetWindowId = currentWindow.id;
-		// 	const idMap          = new Map();
 
-			// 	try {
-			// 		// ---------------------------------------------------
-			// 		// 第１段階の処理：まずはタブを全て作成してしまう。
-			// 		// ---------------------------------------------------
-			// 		console.log(`第1段階: 親子関係の構築を開始します (index指定なし)。`);
-			// 		const createdTabsInfo = [];
-			// 		for (const node of tabsSortedByHierarchy) {
-			// 			const openerTabId = idMap.get(node.openerTabId);
-			// 			try {
-			// 				const createProperties = {
-			// 					windowId: targetWindowId,
-			// 					openerTabId: openerTabId,
-			// 					url: node.url,
-			// 					active: false,
-			// 					pinned: !!node.pinned,
-			// 					discarded: true,
-			// 					cookieStoreId: node.cookieStoreId,
-			// 				};
-			// 				if (createProperties.cookieStoreId === 'firefox-default') delete createProperties.cookieStoreId;
-			// 				if (!node.url || ['about:newtab', 'about:home', 'about:blank'].includes(node.url)) {
-			// 					createProperties.url = undefined;
-			// 				} else if (node.url.startsWith('about:')) {
-			// 					const originalUrl          = encodeURIComponent(node.url), originalTitle = encodeURIComponent(node.title || 'タイトルなし');
-			// 					createProperties.url       = browser.runtime.getURL(`/viewer/placeholder.html?url=${originalUrl}&title=${originalTitle}`);
-			// 					createProperties.discarded = false;
-			// 				}
-			// 				const isAboutPage = typeof createProperties.url === 'string' && createProperties.url.startsWith('about:');
-			// 				if (isAboutPage || createProperties.url === undefined) {
-			// 					createProperties.discarded = false;
-			// 				}
-			// 				if (createProperties.discarded && node.title) {
-			// 					createProperties.title = node.title;
-			// 				}
-
-			// 				// タブ作成
-			// 				const newTab = await browser.tabs.create(createProperties);
-			// 				idMap.set(node.id, newTab.id);
-			// 				createdTabsInfo.push({ newId: newTab.id, node });
-			// 				TmBackground.State.restoreState.loaded++;
-
-			// 				// 進捗情報をviewer.jsへ送信
-			// 				if (viewerTabId) {
-			// 					browser.tabs.sendMessage(viewerTabId, { type: 'update-progress', loaded: TmBackground.State.restoreState.loaded, total: TmBackground.State.restoreState.total }).catch(() => { });
-			// 				}
-			// 				await TmBackground.Helpers.sleep(25);
-			// 			} catch (err) {
-			// 				console.error(`タブ作成失敗: url=${node.url}`, err); TmBackground.State.restoreState.total--;
-			// 			}
-			// 		}
-
-			// 		// ---------------------------------------------------
-			// 		// 第２段階の処理：ソーティングやトグル開閉などの状態を適用する
-			// 		// ---------------------------------------------------
-			// 		console.log("第2段階: 並べ替え & 状態適用を開始します。");
-			// 		const newTabIdsInCorrectOrder = tabsSortedByIndex.map(node => idMap.get(node.id)).filter(id => id);
-			// 		try {
-			// 			console.log("Firefox標準APIによるタブの物理的な並べ替えを実行します。"); await browser.tabs.move(newTabIdsInCorrectOrder, { windowId: targetWindowId, index: 0 });
-			// 		} catch (e) {
-			// 			console.error("タブの一括移動に失敗しました。", e);
-			// 		}
-			// 		console.log("TSTの安定化のため、2秒間待機します...");
-			// 		await TmBackground.Helpers.sleep(2000);
-
-			// 		// トグル開閉状態の復元（折りたたむか、明示的に展開するかの二択）
-			// 		console.log("待機完了。TST APIによる開閉状態の適用を開始します (深いノードから)。");
-			// 		for (let i = createdTabsInfo.length - 1; i >= 0; i--) {
-			// 			const { newId, node } = createdTabsInfo[i];
-
-			// 			// 親タブでなければ何もしない
-			// 			if (!node.children || node.children.length === 0) continue;
-
-			// 			try {
-			// 				// subtree-collapsed を持つタブは、折りたたむ
-			// 				if (node.states && node.states.includes('subtree-collapsed')) {
-			// 					await browser.runtime.sendMessage(TmBackground.Const.TST_ID, {
-			// 						type: 'collapse-tree',
-			// 						tab: newId
-			// 					});
-			// 				} else {
-			// 					// そうでなければ、明示的に展開する
-			// 					await browser.runtime.sendMessage(TmBackground.Const.TST_ID, {
-			// 						type: 'expand-tree',
-			// 						tab: newId
-			// 					});
-			// 				}
-			// 				await TmBackground.Helpers.sleep(50);
-			// 			} catch (tstError) {
-			// 				console.warn(`TSTへのメッセージ送信に失敗。タブID: ${newId}`, tstError.message);
-			// 			}
-			// 		}
-
-			// 		// ---------------------------------------------------
-			// 		// 第３段階の処理：活性、フォーカス状態などを復元。
-			// 		// ---------------------------------------------------
-			// 		console.log("第3段階: 最終処理を開始します。");
-			// 		const activeNode = tabsSortedByIndex.find(t => t.active);
-			// 		if (activeNode) {
-			// 			const newActiveTabId = idMap.get(activeNode.id); if (newActiveTabId) {
-			// 				await browser.tabs.update(newActiveTabId, { active: true });
-			// 			}
-			// 		}
-			// 		await browser.windows.update(targetWindowId, { focused: true });
-
-			// 	} catch (e) {
-			// 		console.error("タブ復元処理全体で致命的なエラーが発生しました:", e);
-			// 	} finally {
-			// 		TmBackground.State.restoreState.inProgress = false;
-			// 		console.log("復元処理がすべて完了しました。");
-			// 		if (viewerTabId) {
-			// 			browser.runtime.sendMessage({ type: 'refresh-view' }).catch(() => { });
-			// 		}
-			// 	}
-
-			// 	return { success: true, message: '復元処理を開始しました。' };
-
-
-			// (前半のコードは変更なしなので省略)
 			if (TmBackground.State.restoreState.inProgress) {
 				return { success: false, error: '別の復元処理が実行中です。' };
 			}
@@ -321,12 +186,14 @@ const TmBackground = {
 			const idMap          = new Map();
 
 			try {
-				// (第1段階も変更なし)
+				// ---------------------------------------------------
+				// 第１段階の処理：まずはタブを全て作成してしまう。
+				// ---------------------------------------------------
 				console.log(`第1段階: 親子関係の構築を開始します (index指定なし)。`);
 				const createdTabsInfo = [];
 				for (const node of tabsSortedByHierarchy) {
 
-					// ★★★ [修正] 他の拡張機能のプレースホルダURLをデコードする処理を追加 ★★★
+					// 他の拡張機能で作成されたタブの場合、プレースホルダURLをデコードする
 					if (node.url && node.url.startsWith('moz-extension://') && node.url.includes('/placeholder.html?url=')) {
 						try {
 							const urlParams     = new URL(node.url).searchParams;
@@ -347,8 +214,6 @@ const TmBackground = {
 							console.warn('プレースホルダURLの解析に失敗しました:', node.url, e);
 						}
 					}
-					// ★★★ [修正ここまで] ★★★
-
 
 					const openerTabId = idMap.get(node.openerTabId);
 					try {
@@ -366,10 +231,14 @@ const TmBackground = {
 						if (createProperties.discarded && node.title) {
 							createProperties.title = node.title;
 						}
+
+						// タブ作成
 						const newTab = await browser.tabs.create(createProperties);
 						idMap.set(node.id, newTab.id);
 						createdTabsInfo.push({ newId: newTab.id, node });
 						TmBackground.State.restoreState.loaded++;
+
+						// 進捗情報をviewer.jsへ送信
 						if (viewerTabId) {
 							browser.tabs.sendMessage(viewerTabId, { type: 'update-progress', loaded: TmBackground.State.restoreState.loaded, total: TmBackground.State.restoreState.total }).catch(() => { });
 						}
@@ -379,7 +248,9 @@ const TmBackground = {
 					}
 				}
 
-				// (第2段階前半も変更なし)
+				// ---------------------------------------------------
+				// 第２段階の処理：ソーティングやトグル開閉などの状態を適用する
+				// ---------------------------------------------------
 				console.log("第2段階: 並べ替え & 状態適用を開始します。");
 				const newTabIdsInCorrectOrder = tabsSortedByIndex.map(node => idMap.get(node.id)).filter(id => id);
 				try {
@@ -390,7 +261,7 @@ const TmBackground = {
 				console.log("TSTの安定化のため、2秒間待機します...");
 				await TmBackground.Helpers.sleep(2000);
 
-				// ★★★★★★★★★★★ [最終修正] 折りたたむか、明示的に展開するかの二択 ★★★★★★★★★★★
+				// トグル開閉状態の復元（折りたたむか、明示的に展開するかの二択）
 				console.log("待機完了。TST APIによる開閉状態の適用を開始します (深いノードから)。");
 				for (let i = createdTabsInfo.length - 1; i >= 0; i--) {
 					const { newId, node } = createdTabsInfo[i];
@@ -418,7 +289,9 @@ const TmBackground = {
 					}
 				}
 
-				// (第3段階も変更なし)
+				// ---------------------------------------------------
+				// 第３段階の処理：活性、フォーカス状態などを復元。
+				// ---------------------------------------------------
 				console.log("第3段階: 最終処理を開始します。");
 				const activeNode = tabsSortedByIndex.find(t => t.active);
 				if (activeNode) {
