@@ -49,6 +49,9 @@
 	"tsvRow_DuplicateFound": {
 		"message": "★重複あり★"
 	},
+	"popupTitle": {
+		"message": "エクスポート・ツール"
+	},
 	"viewerTitle": {
 		"message": "TST ライブビューア"
 	},
@@ -73,5 +76,26 @@
 	},
 	"errorNoTabToDisp": {
 		"message": "表示するタブがありません。"
+	},
+	"popupRestoreButton": {
+		"message": "JSONから復元"
+	},
+	"viewerRestoring": {
+		"message": "復元中です... しばらくお待ちください。"
+	},
+	"contextMenuDelete": {
+		"message": "このタブを削除"
+	},
+	"placeholderTitle": {
+		"message": "復元情報"
+	},
+	"placeholderCopyButton": {
+		"message": "URLをコピー"
+	},
+	"placeholderCopyButtonCopied": {
+		"message": "コピーしました！"
+	},
+	"placeholderDescription": {
+		"message": "このページは、セキュリティ上の理由で直接開けないタブの代替として表示されています。"
 	}
 }

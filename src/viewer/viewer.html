@@ -2,7 +2,6 @@
 <html>
 	<head>
 		<meta charset="UTF-8" />
-		<!-- JSで設定 -->
 		<title></title>
 		<link rel="icon" href="/icon/icon-48.png" />
 		<link rel="stylesheet" href="/viewer/viewer.css" />
@@ -13,9 +12,30 @@
 			<button id="refreshBtn" data-i18n="viewerRefreshButton"></button>
 			<button id="expandAll" data-i18n="viewerExpandAllButton"></button>
 			<button id="collapseAll" data-i18n="viewerCollapseAllButton"></button>
+			<button id="restoreBtn" data-i18n="popupRestoreButton"></button>
+			<input type="file" id="file-input" accept=".json" style="display: none" />
 		</div>
 		<div id="tree-container">
-			<p data-i18n="viewerLoading"></p>
+			<!-- ここにメッセージが表示される必要はなくなった -->
+			<!-- <p data-i18n="viewerLoading"></p> -->
+		</div>
+
+		<div id="loading-mask" class="loading-mask">
+			<!-- ★★★ 通常読み込み時に表示するメッセージとスピナーを格納するコンテナ ★★★ -->
+			<div class="loading-content">
+				<!-- ★★★ ローディングメッセージ用のpタグ ★★★ -->
+				<p id="loading-text"></p>
+				<!-- ★★★ スピナー ★★★ -->
+				<div id="spinner" class="spinner"></div>
+			</div>
+
+			<!-- ★★★ タブ復元時に表示するプログレスバー ★★★ -->
+			<div id="progress-container">
+				<p id="progress-text"></p>
+				<div id="progress-bar-wrapper">
+					<div id="progress-bar"></div>
+				</div>
+			</div>
 		</div>
 		<script src="/common/common.js"></script>
 		<script src="/viewer/viewer.js"></script>

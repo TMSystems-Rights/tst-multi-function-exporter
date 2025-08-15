@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<title data-i18n="placeholderTitle"></title>
+		<style>
+			body {
+				font-family: sans-serif;
+				padding: 2em;
+			}
+			h1 {
+				word-break: break-all;
+			}
+			code {
+				background: #eee;
+				padding: 0.2em 0.4em;
+				border-radius: 3px;
+			}
+			.url-container {
+				margin-top: 1em;
+			}
+		</style>
+	</head>
+	<body>
+		<h1 id="title"></h1>
+		<div class="url-container">
+			<code><a id="url-link"></a></code>
+			<button id="copy-btn" data-i18n="placeholderCopyButton"></button>
+		</div>
+		<p data-i18n="placeholderDescription"></p>
+
+		<script src="/common/common.js"></script>
+		<script src="placeholder.js"></script>
+	</body>
+</html>

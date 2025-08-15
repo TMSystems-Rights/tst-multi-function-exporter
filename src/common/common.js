@@ -21,8 +21,8 @@ const TmCommon = {
 		 */
 		GetMsg: function (key, substitutions) {
 			try {
-				// substitutionsが単一の文字列の場合、配列に変換
-				const subs = substitutions ? (Array.isArray(substitutions) ? substitutions : [substitutions]) : [];
+				// substitutionsが未定義なら空配列、文字列なら配列化、配列ならそのまま使う
+				const subs = !substitutions ? [] : (Array.isArray(substitutions) ? substitutions : [substitutions]);
 				return browser.i18n.getMessage(key, subs);
 			} catch (e) {
 				console.error(`i18nキー "${key}" の取得に失敗しました。`, e);
@@ -52,17 +52,26 @@ const TmCommon = {
 			});
 
 			// ページタイトルを設定
-			if (document.title && document.title.dataset && document.title.dataset.i18n) {
-				document.title = getMsg(document.title.dataset.i18n);
-			} else if (document.querySelector('title[data-i18n]')) {
-				// title要素自体にdata-i18nがある場合
-				const titleElem = document.querySelector('title[data-i18n]');
-				document.title  = getMsg(titleElem.getAttribute('data-i18n'));
+			const titleElem = document.querySelector('title[data-i18n]');
+			if (titleElem) {
+				const key      = titleElem.getAttribute('data-i18n');
+				document.title = getMsg(key);
 			}
+		},
+
+		CutStringByLength: function (str, maxLen) {
+			if (!str) {
+				return '';
+			}
+			if (str.length > maxLen) {
+				return str.substring(0, maxLen - 1) + '…';
+			}
+			return str; // substringは不要。元の文字列がmaxLen以下ならそのまま返す
 		}
+
+
 	}
 };
-
 
 /**
  * オブジェクトを再帰的に（深く）凍結する関数 (ESLint no-prototype-builtins 対応版)
