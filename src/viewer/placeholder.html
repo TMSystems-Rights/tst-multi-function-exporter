@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta charset="UTF-8" />
-		<title>復元情報</title>
+		<title data-i18n="placeholderTitle"></title>
 		<style>
 			body {
 				font-family: sans-serif;
@@ -25,10 +25,11 @@
 		<h1 id="title"></h1>
 		<div class="url-container">
 			<code><a id="url-link"></a></code>
-			<button id="copy-btn">URLをコピー</button>
+			<button id="copy-btn" data-i18n="placeholderCopyButton"></button>
 		</div>
-		<p>このページは、セキュリティ上の理由で直接開けないタブの代替として表示されています。</p>
+		<p data-i18n="placeholderDescription"></p>
 
+		<script src="/common/common.js"></script>
 		<script src="placeholder.js"></script>
 	</body>
 </html>

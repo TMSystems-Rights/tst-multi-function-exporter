@@ -85,5 +85,17 @@
 	},
 	"contextMenuDelete": {
 		"message": "Delete this tab"
+	},
+	"placeholderTitle": {
+		"message": "Restored Info"
+	},
+	"placeholderCopyButton": {
+		"message": "Copy URL"
+	},
+	"placeholderCopyButtonCopied": {
+		"message": "Copied!"
+	},
+	"placeholderDescription": {
+		"message": "This page is displayed as a substitute for a tab that cannot be opened directly for security reasons."
 	}
 }

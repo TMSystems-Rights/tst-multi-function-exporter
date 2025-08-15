@@ -85,5 +85,17 @@
 	},
 	"contextMenuDelete": {
 		"message": "このタブを削除"
+	},
+	"placeholderTitle": {
+		"message": "復元情報"
+	},
+	"placeholderCopyButton": {
+		"message": "URLをコピー"
+	},
+	"placeholderCopyButtonCopied": {
+		"message": "コピーしました！"
+	},
+	"placeholderDescription": {
+		"message": "このページは、セキュリティ上の理由で直接開けないタブの代替として表示されています。"
 	}
 }

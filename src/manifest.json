@@ -13,9 +13,7 @@
 	},
 	"permissions": [
 		"tabs",
-		"downloads",
-		"bookmarks",
-		"storage"
+		"downloads"
 	],
 	"background": {
 		"scripts": [
@@ -30,7 +28,8 @@
 	},
 	"icons": {
 		"48": "icon/icon-48.png",
-		"96": "icon/icon-96.png"
+		"96": "icon/icon-96.png",
+		"128": "icon/icon-128.png"
 	},
 	"web_accessible_resources": [
 		{
@@ -38,12 +37,12 @@
 				"viewer/viewer.html",
 				"viewer/viewer.js",
 				"viewer/viewer.css",
-				"viewer/svg/*.svg",
+				"viewer/svg/020_TST/*.svg",
 				"viewer/placeholder.html",
 				"viewer/placeholder.js"
 			],
-			"matches": [
-				"<all_urls>"
+			"extension_ids": [
+				"{3414d66d-8a1a-4201-87c7-4741ee9a0556}"
 			]
 		}
 	]
