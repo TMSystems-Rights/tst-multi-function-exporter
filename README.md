@@ -14,6 +14,16 @@ Also, from version 2.1.0 onwards, you can fully restore tabs using a JSON file.
 ### ＝＝＝ 出力イメージ ＝＝＝
 <img width="500" height="700" alt="image" src="https://github.com/user-attachments/assets/6a096036-dbc3-42ab-9baa-8d229e81ec61" />
 
+---
+
+## 当拡張機能での「タブ」の定義
+-   当拡張機能で取り扱うタブの種類
+    - 通常のタブ
+    - ピン止めタブ
+    - コンテナタブ
+    - Firefox標準機能で作成したグループタブ
+
+※TST独自のグループ機能で作成したグループはCSS的な仮想タブであり、取り扱い対象外です。
 
 ---
 
@@ -27,12 +37,6 @@ Also, from version 2.1.0 onwards, you can fully restore tabs using a JSON file.
     -   **TSV**: Excelなどの表計算ソフトで開くための、フラットなタブ区切り形式で保存します。URLの重複チェック機能付き。
 -   **JSONからタブを復元 (Restore From Json format file)** (v2.1.0以降)
     -   当拡張機能でエクスポートしたJSONファイルを使用して、ツリー開閉、アクティブ、フォーカスなどの状態まで完全復元します。
-    -   タブとは以下のものを指します。
-        - 通常のタブ
-        - ピン止めタブ
-        - コンテナタブ
-        - Firefox標準機能で作成したグループタブ<br>
-            ※TST独自のグループ機能で作成したグループはCSS的な仮想タブであり、当拡張機能では扱いません。
 -   **インタラクティブ・ライブビューア (Interactive Live Viewer)**
     -   現在のタブの状態を、開閉可能なツリー形式でリアルタイムに表示します。
     -   ビューアから直接、目的のタブに**ジャンプ**できます。
