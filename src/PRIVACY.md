@@ -2,7 +2,7 @@
 
 ## TST 多機能エクスポーター (TST Multi-Function Exporter)
 
-**最終更新日 (Last Updated):** 2025-08-15
+**最終更新日 (Last Updated):** 2025-08-16
 
 TMSystems（以下、「開発者」）は、このアドオン「TST 多機能エクスポーター」（以下、「本ソフトウェア」）におけるプライバシー情報の取り扱いについて、以下の通りプライバシーポリシーを定めます。
 
@@ -22,6 +22,8 @@ Our add-on requires the following permissions to function. These permissions are
     (Required to read information about open tabs (title, URL, tree structure) and to restore tabs from a JSON file.)
 -   **downloads**: ユーザーの指示に基づき、タブ情報をファイルとして PC に保存するために必要です。
     (Required to save tab information as a file to your computer at your instruction.)
+-   **cookies**: Firefox のコンテナタブ（「個人」「仕事」など）を、エクスポートされたファイルから正しく復元するために必要です。この権限はタブをどのコンテナで開くかを指定するためにのみ使用され、Cookie の内容を読み取ったり、追跡したり、外部に送信したりすることはありません。
+    (Required to correctly restore Firefox Container Tabs (e.g., "Personal," "Work") from an exported file. This permission is used solely to specify which container a tab should be opened in and is never used to read, track, or transmit the contents of your cookies.)
 
 ### 3. お問い合わせ (Contact Us)
 

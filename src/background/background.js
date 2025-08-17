@@ -22,54 +22,54 @@ const TmBackground = {
 		// 「/viewer/svg/020_TST/」フォルダ内のSVGアイコンは、TSTの公式アイコンを使用しています。
 		// https://github.com/piroor/treestyletab/tree/trunk/webextensions/resources/icons
 		// ======================================================
-		FALLBACK_ICON_URL: '/viewer/svg/020_TST/defaultFavicon.svg',
-		ADDON_ICON_URL: '/viewer/svg/020_TST/extensions.svg',
-		LOCK_ICON_URL: '/viewer/svg/020_TST/lockwise.svg',
-		FIREFOX_ICON_URL: 'chrome://branding/content/icon32.png',
-		ROBOTS_ICON_URL: 'chrome://browser/content/robot.ico',
+		FALLBACK_ICON_URL        : '/viewer/svg/020_TST/defaultFavicon.svg',
+		ADDON_ICON_URL           : '/viewer/svg/020_TST/extensions.svg',
+		LOCK_ICON_URL            : '/viewer/svg/020_TST/lockwise.svg',
+		FIREFOX_ICON_URL         : 'chrome://branding/content/icon32.png',
+		ROBOTS_ICON_URL          : 'chrome://browser/content/robot.ico',
 		PRIVATE_BROWSING_ICON_URL: 'chrome://browser/skin/privatebrowsing/favicon.svg',
-		BLOCKED_ICON_URL: 'chrome://global/skin/icons/blocked.svg',
-		DEVELOPER_ICON_URL: 'chrome://global/skin/icons/developer.svg',
-		INFO_ICON_URL: 'chrome://global/skin/icons/info.svg',
-		PERFORMANCE_ICON_URL: 'chrome://global/skin/icons/performance.svg',
-		SETTINGS_ICON_URL: 'chrome://global/skin/icons/settings.svg',
+		BLOCKED_ICON_URL         : 'chrome://global/skin/icons/blocked.svg',
+		DEVELOPER_ICON_URL       : 'chrome://global/skin/icons/developer.svg',
+		INFO_ICON_URL            : 'chrome://global/skin/icons/info.svg',
+		PERFORMANCE_ICON_URL     : 'chrome://global/skin/icons/performance.svg',
+		SETTINGS_ICON_URL        : 'chrome://global/skin/icons/settings.svg',
 
 		// ======================================================
 		// TSTの内部アイコン表示ルール ※TSTのfavicon表示仕様にあわせています。
 		// ======================================================
 		INTERNAL_ICONS: {
-			'about:about': 'chrome://branding/content/icon32.png',
-			'about:addons': '/viewer/svg/020_TST/extensions.svg',
-			'about:blank': '/viewer/svg/020_TST/defaultFavicon.svg',
-			'about:blocked': 'chrome://global/skin/icons/blocked.svg',
-			'about:buildconfig': '/viewer/svg/020_TST/defaultFavicon.svg',
-			'about:cache': '/viewer/svg/020_TST/defaultFavicon.svg',
-			'about:cache?device=disk': '/viewer/svg/020_TST/defaultFavicon.svg',
-			'about:cache?device=memory': '/viewer/svg/020_TST/defaultFavicon.svg',
+			'about:about'               : 'chrome://branding/content/icon32.png',
+			'about:addons'              : '/viewer/svg/020_TST/extensions.svg',
+			'about:blank'               : '/viewer/svg/020_TST/defaultFavicon.svg',
+			'about:blocked'             : 'chrome://global/skin/icons/blocked.svg',
+			'about:buildconfig'         : '/viewer/svg/020_TST/defaultFavicon.svg',
+			'about:cache'               : '/viewer/svg/020_TST/defaultFavicon.svg',
+			'about:cache?device=disk'   : '/viewer/svg/020_TST/defaultFavicon.svg',
+			'about:cache?device=memory' : '/viewer/svg/020_TST/defaultFavicon.svg',
 			'about:cache?device=offline': '/viewer/svg/020_TST/defaultFavicon.svg',
-			'about:certerror': '/viewer/svg/020_TST/defaultFavicon.svg',
-			'about:config': 'chrome://global/skin/icons/settings.svg',
-			'about:crashes': '/viewer/svg/020_TST/defaultFavicon.svg',
-			'about:debugging': 'chrome://global/skin/icons/developer.svg',
-			'about:home': 'chrome://branding/content/icon32.png',
-			'about:jetpack': 'chrome://global/skin/icons/info.svg',
-			'about:license': '/viewer/svg/020_TST/defaultFavicon.svg',
-			'about:logins': '/viewer/svg/020_TST/lockwise.svg',
-			'about:logo': '/viewer/svg/020_TST/defaultFavicon.svg',
-			'about:memory': '/viewer/svg/020_TST/defaultFavicon.svg',
-			'about:mozilla': '/viewer/svg/020_TST/defaultFavicon.svg',
-			'about:neterror': '/viewer/svg/020_TST/defaultFavicon.svg',
-			'about:newtab': 'chrome://branding/content/icon32.png',
-			'about:performance': 'chrome://global/skin/icons/performance.svg',
-			'about:permissions': 'chrome://global/skin/icons/info.svg',
-			'about:plugins': 'chrome://global/skin/icons/info.svg',
-			'about:preferences': 'chrome://global/skin/icons/settings.svg',
-			'about:privatebrowsing': 'chrome://browser/skin/privatebrowsing/favicon.svg',
-			'about:robots': 'chrome://browser/content/robot.ico',
-			'about:sessionrestore': 'chrome://global/skin/icons/info.svg',
-			'about:support': 'chrome://branding/content/icon32.png',
-			'about:sync-tabs': 'chrome://global/skin/icons/info.svg',
-			'chrome://': '/viewer/svg/020_TST/defaultFavicon.svg'
+			'about:certerror'           : '/viewer/svg/020_TST/defaultFavicon.svg',
+			'about:config'              : 'chrome://global/skin/icons/settings.svg',
+			'about:crashes'             : '/viewer/svg/020_TST/defaultFavicon.svg',
+			'about:debugging'           : 'chrome://global/skin/icons/developer.svg',
+			'about:home'                : 'chrome://branding/content/icon32.png',
+			'about:jetpack'             : 'chrome://global/skin/icons/info.svg',
+			'about:license'             : '/viewer/svg/020_TST/defaultFavicon.svg',
+			'about:logins'              : '/viewer/svg/020_TST/lockwise.svg',
+			'about:logo'                : '/viewer/svg/020_TST/defaultFavicon.svg',
+			'about:memory'              : '/viewer/svg/020_TST/defaultFavicon.svg',
+			'about:mozilla'             : '/viewer/svg/020_TST/defaultFavicon.svg',
+			'about:neterror'            : '/viewer/svg/020_TST/defaultFavicon.svg',
+			'about:newtab'              : 'chrome://branding/content/icon32.png',
+			'about:performance'         : 'chrome://global/skin/icons/performance.svg',
+			'about:permissions'         : 'chrome://global/skin/icons/info.svg',
+			'about:plugins'             : 'chrome://global/skin/icons/info.svg',
+			'about:preferences'         : 'chrome://global/skin/icons/settings.svg',
+			'about:privatebrowsing'     : 'chrome://browser/skin/privatebrowsing/favicon.svg',
+			'about:robots'              : 'chrome://browser/content/robot.ico',
+			'about:sessionrestore'      : 'chrome://global/skin/icons/info.svg',
+			'about:support'             : 'chrome://branding/content/icon32.png',
+			'about:sync-tabs'           : 'chrome://global/skin/icons/info.svg',
+			'chrome://'                 : '/viewer/svg/020_TST/defaultFavicon.svg'
 		}
 	},
 
@@ -83,11 +83,13 @@ const TmBackground = {
 		 * @property {boolean} inProgress - 復元処理が進行中かどうか。
 		 * @property {number} loaded - 読み込みが完了したタブの数。
 		 * @property {number} total - 復元対象の総タブ数。
+		 * @property {boolean} isSuppressingTst - 復元中にTSTの自動処理を抑制しているか。
 		 */
 		restoreState: {
 			inProgress: false,
 			loaded: 0,
-			total: 0
+			total: 0,
+			isSuppressingTst: false // TST自動処理抑制フラグ
 		}
 	},
 
@@ -102,13 +104,36 @@ const TmBackground = {
 		 */
 		handleDataRequest: async function (message) {
 			try {
-				const tree = await browser.runtime.sendMessage(TmBackground.Const.TST_ID, { type: 'get-tree', tabs: '*' });
-				if (!tree) throw new Error('TSTからツリー構造を取得できませんでした。');
-				const viewerUrl       = browser.runtime.getURL('viewer/viewer.html');
-				const filteredTree    = TmBackground.Helpers.filterTree(tree, (tab) => tab.url !== viewerUrl);
-				const outputData      = TmBackground.Helpers.convertTreeForJSON(filteredTree);
-				const currentDatetime = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/[:/]/g, '').replace(/\s/g, '_');
-				const fileBaseName    = `forefox_tab_list_${currentDatetime}`;
+				// TSTからツリー構造を取得
+				const currentWindow = await browser.windows.getCurrent();
+				const tree          = await browser.runtime.sendMessage(
+					TmBackground.Const.TST_ID,
+					{
+						type: 'get-tree',
+						window: currentWindow.id
+					}
+				);
+
+				if (!tree || !Array.isArray(tree)) {
+					throw new Error('TSTから有効なツリー構造（配列）を取得できませんでした。');
+				}
+
+				// ツリー構造からエクスポート用データを作成
+				const viewerUrl    = browser.runtime.getURL('viewer/viewer.html');
+				const filteredTree = TmBackground.Helpers.filterTree(tree, (tab) => tab.url !== viewerUrl);
+				const outputData   = TmBackground.Helpers.convertTreeForJSON(filteredTree);
+
+				const currentDatetime = new Date().toLocaleString('ja-JP', {
+					timeZone: 'Asia/Tokyo',
+					year    : 'numeric',
+					month   : '2-digit',
+					day     : '2-digit',
+					hour    : '2-digit',
+					minute  : '2-digit',
+					second  : '2-digit'
+				}).replace(/[:/]/g, '').replace(/\s/g, '_');
+
+				const fileBaseName = `forefox_tab_list_${currentDatetime}`;
 				switch (message.type) {
 					case 'export-json': {
 						const jsonString = JSON.stringify(outputData, null, 2);
@@ -162,7 +187,10 @@ const TmBackground = {
 
 
 		/**
-		 * JSONデータからタブのツリーを復元するリクエストのメインハンドラ (最終完成版: 明示的展開)
+		 * JSONデータからタブのツリーを復元するリクエストのメインハンドラ
+		 * 「スプリントと休息」アーキテクチャを採用。
+		 * 短い区間を一気に処理した後、長い休息時間を設けることで、
+		 * TSTの処理遅延を完全に解消し、データの整合性を完璧に保つ。
 		 * @param {Array<object>} windowsData - ウィンドウ情報の配列 [{ windowId, focused, tabs:[...] }, ...]
 		 */
 		handleRestoreRequest: async function (windowsData) {
@@ -171,150 +199,232 @@ const TmBackground = {
 				return { success: false, error: '別の復元処理が実行中です。' };
 			}
 			const tabsSortedByHierarchy = windowsData.flatMap(w => TmBackground.Helpers.flattenTreeWithDepth(w.tabs || [])).sort((a, b) => {
-				if (a.depth < b.depth) return -1; if (a.depth > b.depth) return 1; if (a.index < b.index) return -1; if (a.index > b.index) return 1; return 0;
+				if (a.depth < b.depth) {
+					return -1;
+				}
+				if (a.depth > b.depth) {
+					return 1;
+				}
+				if (a.index < b.index) {
+					return -1;
+				}
+				if (a.index > b.index) {
+					return 1;
+				}
+				return 0;
 			});
 			const tabsSortedByIndex     = [...tabsSortedByHierarchy].sort((a, b) => a.index - b.index);
 			if (tabsSortedByHierarchy.length === 0) {
 				return { success: true };
 			}
-			TmBackground.State.restoreState = { inProgress: true, loaded: 0, total: tabsSortedByHierarchy.length };
-			console.log(`【最終完成版: 明示的展開】復元対象の総タブ数: ${TmBackground.State.restoreState.total}`);
+			TmBackground.State.restoreState = {
+				inProgress: true,
+				loaded: 0,
+				total: tabsSortedByHierarchy.length,
+			};
+			console.log(`復元対象の総タブ数: ${TmBackground.State.restoreState.total}`);
 			const viewerTabs     = await browser.tabs.query({ url: browser.runtime.getURL('/viewer/viewer.html') });
 			const viewerTabId    = viewerTabs.length > 0 ? viewerTabs[0].id : null;
 			const currentWindow  = await browser.windows.getCurrent({ populate: false });
 			const targetWindowId = currentWindow.id;
 			const idMap          = new Map();
 
-			try {
-				// ---------------------------------------------------
-				// 第１段階の処理：まずはタブを全て作成してしまう。
-				// ---------------------------------------------------
-				console.log(`第1段階: 親子関係の構築を開始します (index指定なし)。`);
-				const createdTabsInfo = [];
-				for (const node of tabsSortedByHierarchy) {
+			const restoreProcess = async () => {
+				const sendProgressUpdate = (stage, stageText, loaded = -1, total = -1) => {
+					if (viewerTabId) {
+						browser.tabs.sendMessage(viewerTabId, { type: 'update-progress', stage, stageText, loaded, total }).catch(() => {});
+					}
+				};
 
-					// 他の拡張機能で作成されたタブの場合、プレースホルダURLをデコードする
-					if (node.url && node.url.startsWith('moz-extension://') && node.url.includes('/placeholder.html?url=')) {
+				try {
+					// ---------------------------------------------------
+					// 第１段階の処理：タブ作成（スプリント＆休息方式）
+					// ---------------------------------------------------
+					console.log(`第1段階: タブ作成を開始します（スプリント＆休息方式）。`);
+
+					const createdTabsInfo = [];
+					const totalTabs       = tabsSortedByHierarchy.length;
+					const stage1Text      = '第1段階: タブを作成中...';
+					console.log(stage1Text);
+					sendProgressUpdate(1, stage1Text, 0, totalTabs);
+
+					// ★★★ [変更] スプリントカウンターを導入 ★★★
+					let sprintCounter = 0;
+					const SPRINT_SIZE = 50; // 50タブごとに休息
+
+					for (const node of tabsSortedByHierarchy) {
+						// tryの範囲をforループ内全域に広げました。
 						try {
-							const urlParams     = new URL(node.url).searchParams;
-							const originalUrl   = urlParams.get('url');
-							const originalTitle = urlParams.get('title');
+							// 他の拡張機能で作成されたタブの場合、プレースホルダURLをデコードする
+							if (node.url && node.url.startsWith('moz-extension://') && node.url.includes('/placeholder.html?url=')) {
+								try {
+									const urlParams     = new URL(node.url).searchParams;
+									const originalUrl   = urlParams.get('url');
+									const originalTitle = urlParams.get('title');
 
-							if (originalUrl) {
-								console.log(`プレースホルダURLをデコード: ${node.url} -> ${originalUrl}`);
-								node.url = originalUrl; // URLを本来のものに書き換える
-								// もし元のタイトルがなければ、デコードしたタイトルを使う
-								if (!node.title || node.title.startsWith('Restored Info:') || node.title.startsWith('復元情報:')) {
-									if (originalTitle) {
-										node.title = originalTitle;
+									if (originalUrl) {
+										console.log(`プレースホルダURLをデコード: ${node.url} -> ${originalUrl}`);
+										node.url = originalUrl; // URLを本来のものに書き換える
+										// もし元のタイトルがなければ、デコードしたタイトルを使う
+										if (!node.title || node.title.startsWith('Restored Info:') || node.title.startsWith('復元情報:')) {
+											if (originalTitle) {
+												node.title = originalTitle;
+											}
+										}
 									}
+								} catch (e) {
+									console.warn('プレースホルダURLの解析に失敗しました:', node.url, e);
 								}
 							}
-						} catch (e) {
-							console.warn('プレースホルダURLの解析に失敗しました:', node.url, e);
+
+							const openerTabId = idMap.get(node.openerTabId);
+
+							const createProperties = {
+								windowId: targetWindowId,
+								openerTabId: openerTabId,
+								url: node.url,
+								active: false,
+								pinned: !!node.pinned,
+								discarded: true,
+								cookieStoreId: node.cookieStoreId,
+							};
+
+							if (createProperties.cookieStoreId === 'firefox-default') {
+								delete createProperties.cookieStoreId;
+							}
+
+							if (!node.url || ['about:newtab', 'about:home', 'about:blank'].includes(node.url)) {
+								createProperties.url       = undefined;
+								createProperties.discarded = false;
+							} else if (node.url.startsWith('about:')) {
+								const originalUrl          = encodeURIComponent(node.url);
+								const originalTitle        = encodeURIComponent(node.title || 'タイトルなし');
+								createProperties.url       = browser.runtime.getURL(`/viewer/placeholder.html?url=${originalUrl}&title=${originalTitle}`);
+								createProperties.discarded = false;
+							}
+
+							if (createProperties.discarded && node.title) {
+								createProperties.title = node.title;
+							}
+
+							// タブ作成
+							const newTab = await browser.tabs.create(createProperties);
+							idMap.set(node.id, newTab.id);
+							createdTabsInfo.push({ newId: newTab.id, node });
+							TmBackground.State.restoreState.loaded++;
+
+							// 進捗情報をviewer.jsへ送信
+							sendProgressUpdate(1, stage1Text, TmBackground.State.restoreState.loaded, totalTabs);
+						} catch (err) {
+							console.error(`タブ作成失敗: url=${node.url}`, err);
+							TmBackground.State.restoreState.total--;
+						} finally {
+							// スプリントと休息のロジック
+							sprintCounter++;
+							if (sprintCounter % SPRINT_SIZE === 0) {
+								console.log(`--- Checkpoint: ${sprintCounter}タブ作成完了。TST安定化のため1.5秒休息... ---`);
+								await TmBackground.Helpers.sleep(1500); // 長い休息
+							} else {
+								await TmBackground.Helpers.sleep(50); // 通常のスプリントペース
+							}
 						}
 					}
 
-					const openerTabId = idMap.get(node.openerTabId);
+					// TSTがタブの作成完了するだけの待機時間を設ける
+					console.log('全タブ作成完了。TSTの内部処理が安定するまで5秒間待機します...');
+					await TmBackground.Helpers.sleep(5000);
+
+					// ---------------------------------------------------
+					// 第２段階の処理：ソーティング
+					// ---------------------------------------------------
+					console.log("第2段階: 並べ替えを開始します。");
+					const stage2Text = '第2段階: タブの並べ替え中...';
+					console.log(stage2Text);
+					sendProgressUpdate(2, stage2Text);
+					const newTabIdsInCorrectOrder = tabsSortedByIndex.map(node => idMap.get(node.id)).filter(id => id);
 					try {
-						const createProperties = { windowId: targetWindowId, openerTabId: openerTabId, url: node.url, active: false, pinned: !!node.pinned, discarded: true, cookieStoreId: node.cookieStoreId, };
-						if (createProperties.cookieStoreId === 'firefox-default') delete createProperties.cookieStoreId;
-						if (!node.url || ['about:newtab', 'about:home', 'about:blank'].includes(node.url)) {
-							createProperties.url = undefined;
-						} else if (node.url.startsWith('about:')) {
-							const originalUrl = encodeURIComponent(node.url), originalTitle = encodeURIComponent(node.title || 'タイトルなし'); createProperties.url = browser.runtime.getURL(`/viewer/placeholder.html?url=${originalUrl}&title=${originalTitle}`); createProperties.discarded = false;
-						}
-						const isAboutPage = typeof createProperties.url === 'string' && createProperties.url.startsWith('about:');
-						if (isAboutPage || createProperties.url === undefined) {
-							createProperties.discarded = false;
-						}
-						if (createProperties.discarded && node.title) {
-							createProperties.title = node.title;
-						}
-
-						// タブ作成
-						const newTab = await browser.tabs.create(createProperties);
-						idMap.set(node.id, newTab.id);
-						createdTabsInfo.push({ newId: newTab.id, node });
-						TmBackground.State.restoreState.loaded++;
-
-						// 進捗情報をviewer.jsへ送信
-						if (viewerTabId) {
-							browser.tabs.sendMessage(viewerTabId, { type: 'update-progress', loaded: TmBackground.State.restoreState.loaded, total: TmBackground.State.restoreState.total }).catch(() => { });
-						}
-						await TmBackground.Helpers.sleep(25);
-					} catch (err) {
-						console.error(`タブ作成失敗: url=${node.url}`, err); TmBackground.State.restoreState.total--;
+						await browser.tabs.move(newTabIdsInCorrectOrder, { windowId: targetWindowId, index: 0 });
+					} catch (e) {
+						console.error('タブの一括移動に失敗しました。', e);
 					}
-				}
+					// 並べ替え後、TSTが再度ツリーを安定させるための待機時間
+					console.log('全タブ並べ替え完了。TSTの内部処理が安定するまで3秒間待機します...');
+					await TmBackground.Helpers.sleep(3000);
 
-				// ---------------------------------------------------
-				// 第２段階の処理：ソーティングやトグル開閉などの状態を適用する
-				// ---------------------------------------------------
-				console.log("第2段階: 並べ替え & 状態適用を開始します。");
-				const newTabIdsInCorrectOrder = tabsSortedByIndex.map(node => idMap.get(node.id)).filter(id => id);
-				try {
-					console.log("Firefox標準APIによるタブの物理的な並べ替えを実行します。"); await browser.tabs.move(newTabIdsInCorrectOrder, { windowId: targetWindowId, index: 0 });
+					// ---------------------------------------------------
+					// 第3段階の処理：アクティブタブの設定
+					// ---------------------------------------------------
+					console.log("第3段階: アクティブタブを設定を開始します。");
+					const stage3Text = '第3段階: アクティブタブを設定中...';
+					console.log(stage3Text);
+					sendProgressUpdate(3, stage3Text);
+
+					// ここで、アクティブなタブを設定するところですが、
+					// アクティブにすると当拡張機能のビューア画面からそのタブ画面へフォーカス移動してしまいます。
+					// これだと進捗状況もわからず困るので、処理は削除。
+					// （将来このロジックを復活するかもしれないので、参考としてコメントアウトしコードは残します）
+
+					// const activeNode = tabsSortedByIndex.find(t => t.active);
+					// if (activeNode) {
+					// 	const newActiveTabId = idMap.get(activeNode.id); if (newActiveTabId) await browser.tabs.update(newActiveTabId, { active: true });
+					// }
+					// await browser.windows.update(targetWindowId, { focused: true });
+
+					// ---------------------------------------------------
+					// 第4段階の処理：ツリーの開閉状態を復元
+					// ---------------------------------------------------
+					console.log("第4段階: ツリー開閉状態の復元を開始します。");
+					const stage4Text = '第4段階: ツリーの開閉状態を適用中...';
+					console.log(stage4Text);
+					sendProgressUpdate(4, stage4Text);
+					for (let i = createdTabsInfo.length - 1; i >= 0; i--) {
+						const { newId, node } = createdTabsInfo[i];
+						if (!node.children || node.children.length === 0) {
+							continue;
+						}
+						try {
+							if (node.states && node.states.includes('subtree-collapsed')) {
+								await browser.runtime.sendMessage(TmBackground.Const.TST_ID, {
+									type: 'collapse-tree',
+									tab: newId
+								});
+							} else {
+								await browser.runtime.sendMessage(TmBackground.Const.TST_ID, {
+									type: 'expand-tree',
+									tab: newId
+								});
+							}
+							await TmBackground.Helpers.sleep(50);
+						} catch (tstError) {
+							console.warn(`TSTへのメッセージ送信に失敗。タブID: ${newId}`, tstError.message);
+						}
+					}
+
+					// ---------------------------------------------------
+					// 第5段階の処理：最終処理（TSTの最終安定化のための待機）
+					// ---------------------------------------------------
+					console.log("第5段階: 最終処理（TSTの最終安定化のための待機）を開始します。");
+					const waitSecond = 5;
+					const stage5Text = `第5段階（最終）: TST安定化のため${waitSecond}秒待機します...`;
+					console.log(stage5Text);
+					sendProgressUpdate(5, stage5Text);
+					console.log(`TSTの最終安定化のため、${waitSecond}秒間待機します...`);
+					await TmBackground.Helpers.sleep(waitSecond * 1000);
+
 				} catch (e) {
-					console.error("タブの一括移動に失敗しました。", e);
-				}
-				console.log("TSTの安定化のため、2秒間待機します...");
-				await TmBackground.Helpers.sleep(2000);
-
-				// トグル開閉状態の復元（折りたたむか、明示的に展開するかの二択）
-				console.log("待機完了。TST APIによる開閉状態の適用を開始します (深いノードから)。");
-				for (let i = createdTabsInfo.length - 1; i >= 0; i--) {
-					const { newId, node } = createdTabsInfo[i];
-
-					// 親タブでなければ何もしない
-					if (!node.children || node.children.length === 0) continue;
-
-					try {
-						// subtree-collapsed を持つタブは、折りたたむ
-						if (node.states && node.states.includes('subtree-collapsed')) {
-							await browser.runtime.sendMessage(TmBackground.Const.TST_ID, {
-								type: 'collapse-tree',
-								tab: newId
-							});
-						} else {
-							// そうでなければ、明示的に展開する
-							await browser.runtime.sendMessage(TmBackground.Const.TST_ID, {
-								type: 'expand-tree',
-								tab: newId
-							});
-						}
-						await TmBackground.Helpers.sleep(50);
-					} catch (tstError) {
-						console.warn(`TSTへのメッセージ送信に失敗。タブID: ${newId}`, tstError.message);
+					console.error('タブ復元処理全体で致命的なエラーが発生しました:', e);
+				} finally {
+					TmBackground.State.restoreState.inProgress = false;
+					console.log('復元処理がすべて完了しました。');
+					if (viewerTabId) {
+						browser.runtime.sendMessage({ type: 'refresh-view' }).catch(() => { });
 					}
 				}
+			};
 
-				// ---------------------------------------------------
-				// 第３段階の処理：活性、フォーカス状態などを復元。
-				// ---------------------------------------------------
-				console.log("第3段階: 最終処理を開始します。");
-				const activeNode = tabsSortedByIndex.find(t => t.active);
-				if (activeNode) {
-					const newActiveTabId = idMap.get(activeNode.id); if (newActiveTabId) {
-						await browser.tabs.update(newActiveTabId, { active: true });
-					}
-				}
-				await browser.windows.update(targetWindowId, { focused: true });
-
-			} catch (e) {
-				console.error("タブ復元処理全体で致命的なエラーが発生しました:", e);
-			} finally {
-				TmBackground.State.restoreState.inProgress = false;
-				console.log("復元処理がすべて完了しました。");
-				if (viewerTabId) {
-					browser.runtime.sendMessage({ type: 'refresh-view' }).catch(() => { });
-				}
-			}
-
-			return { success: true, message: '復元処理を開始しました。' };
-
+			restoreProcess();
+			return Promise.resolve({ success: true, message: '復元処理を開始しました。' });
 		}
-
 	},
 
 	// ===================================================
@@ -391,74 +501,48 @@ const TmBackground = {
 		},
 
 		/**
-		 * TSTから取得した生のタブ情報を、エクスポートに適したツリー構造（JSON形式）に変換します。
-		 * @param {Array<object>} tabs - browser.runtime.sendMessage(TST_ID, { type: 'get-tree' })で取得したタブ情報。
-		 * @returns {Array<object>} - 親子関係が整理されたツリー構造のデータ。
+		 * TSTから取得したツリー構造を、エクスポートに適した形式に再帰的に変換します。
+		 * @param {Array<object>} tstTree - TSTから取得したツリー構造データ。
+		 * @returns {Array<object>} - 整形されたツリー構造データ。
 		 */
-		convertTreeForJSON: function (tabs) {
-			const tabMap    = new Map(tabs.map(tab => [tab.id, tab]));
-			const processed = new Set();
-			const roots     = [];
-			for (const tab of tabs) {
-				const isRoot = !tab.ancestorTabIds || tab.ancestorTabIds.length === 0 || !tabMap.has(tab.ancestorTabIds[tab.ancestorTabIds.length - 1]);
-				if (isRoot) {
-					const node = this.buildSubtree(tab, processed, tabMap);
-					if (node) roots.push(node);
+		convertTreeForJSON: function (tstTree) {
+			const convertNode = (tstNode) => {
+				let finalFavIconUrl = TmBackground.Const.FALLBACK_ICON_URL;
+				let bestMatchKey    = '';
+				if (tstNode.url) {
+					for (const key of Object.keys(TmBackground.Const.INTERNAL_ICONS)) {
+						if (tstNode.url.startsWith(key) && key.length >= bestMatchKey.length) {
+							bestMatchKey = key;
+						}
+					}
 				}
-			}
-			return roots;
-		},
-
-		/**
-		 * 単一のタブ情報を、エクスポート用のノードオブジェクトに変換します（buildSubtreeの内部処理）。
-		 * @param {object} tab - 変換元のタブオブジェクト。
-		 * @param {Set<number>} processed - 処理済みのタブIDを記録するSet。
-		 * @param {Map<number, object>} tabMap - タブIDをキーとするタブ情報のMap。
-		 * @returns {object|null} - 変換後のノードオブジェクト。
-		 */
-		buildSubtree: function (tab, processed, tabMap) {
-			if (processed.has(tab.id)) {
-				return null;
-			}
-			processed.add(tab.id);
-
-			let finalFavIconUrl = TmBackground.Const.FALLBACK_ICON_URL;
-			let bestMatchKey    = '';
-			for (const key of Object.keys(TmBackground.Const.INTERNAL_ICONS)) {
-				if (tab.url.startsWith(key) && key.length >= bestMatchKey.length) {
-					bestMatchKey = key;
+				if (bestMatchKey) {
+					finalFavIconUrl = TmBackground.Const.INTERNAL_ICONS[bestMatchKey];
+				} else if (tstNode.favIconUrl) {
+					finalFavIconUrl = tstNode.favIconUrl;
+				} else if (tstNode.effectiveFavIconUrl) {
+					finalFavIconUrl = tstNode.effectiveFavIconUrl;
 				}
-			}
-			if (bestMatchKey) {
-				finalFavIconUrl = TmBackground.Const.INTERNAL_ICONS[bestMatchKey];
-			} else if (tab.favIconUrl) {
-				finalFavIconUrl = tab.favIconUrl;
-			} else if (tab.effectiveFavIconUrl) {
-				finalFavIconUrl = tab.effectiveFavIconUrl;
-			}
 
-			const node = {
-				id: tab.id,
-				index: tab.index,
-				url: tab.url,
-				title: tab.title,
-				favIconUrl: finalFavIconUrl,
-				pinned: tab.pinned || false,
-				discarded: tab.discarded || tab.hidden,
-				states: tab.states || [], // タブの折り畳み状態を表すプロパティ（展開されている場合:Array []、 畳まれている場合：Array [ "subtree-collapsed" ]）
-				cookieStoreId: tab.cookieStoreId,
-				active: tab.active,
+				const newNode = {
+					id: tstNode.id,
+					index: tstNode.index,
+					url: tstNode.url,
+					title: tstNode.title,
+					favIconUrl: finalFavIconUrl,
+					pinned: tstNode.pinned || false,
+					discarded: tstNode.discarded || tstNode.hidden,
+					states: tstNode.states || [], // タブの折り畳み状態を表すプロパティ（展開されている場合:Array []、 畳まれている場合：Array [ "subtree-collapsed" ]）
+					cookieStoreId: tstNode.cookieStoreId,
+					active: tstNode.active,
+				};
+
+				if (tstNode.children && tstNode.children.length > 0) {
+					newNode.children = tstNode.children.map(child => convertNode(child));
+				}
+				return newNode;
 			};
-
-			if (tab.children && tab.children.length > 0) {
-				node.children = tab.children
-					.map(childTab => this.buildSubtree(childTab, processed, tabMap))
-					.filter(childNode => childNode !== null);
-				if (node.children.length === 0) {
-					delete node.children;
-				}
-			}
-			return node;
+			return tstTree.map(rootNode => convertNode(rootNode));
 		},
 
 		/**
