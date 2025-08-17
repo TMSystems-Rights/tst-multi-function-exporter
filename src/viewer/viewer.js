@@ -10,6 +10,13 @@
 const TmViewer = {
 
 	// ===================================================
+	// 定数
+	// ===================================================
+	Const: {
+		progressRatePrefix: null
+	},
+
+	// ===================================================
 	// DOM要素の参照
 	// ===================================================
 	Elements: {
@@ -38,6 +45,9 @@ const TmViewer = {
 			this.progressContainer = document.getElementById('progress-container');
 			this.loadingText       = document.getElementById('loading-text');
 			this.loadingContent    = document.querySelector('.loading-content');
+
+			// 進捗率の接頭辞設定
+			TmViewer.Const.progressRatePrefix = TmCommon.Funcs.GetMsg('restoreProgressRatePrefix');
 		}
 	},
 
@@ -357,10 +367,36 @@ const TmViewer = {
 					UI.setLoadingState(false);
 					UI.renderTree(true);
 				} else if (message.type === 'update-progress') {
-					// 進捗情報のUIを更新
-					const percent              = message.total > 0 ? (message.loaded / message.total) * 100 : 0;
-					E.progressBar.style.width  = `${percent}%`;
-					E.progressText.textContent = `復元中: ${message.loaded} / ${message.total}`;
+					// 詳細な進捗情報に基づいてUIを更新する
+					const { stage, stageText, loaded, total } = message;
+
+					// --- テキストを更新 ---
+					if (stage === 1) {
+						// 第1段階は、詳細情報（件数、パーセント）も表示
+						const percentage           = (total > 0) ? ((loaded / total) * 100).toFixed(1) : '0.0';
+						E.progressText.textContent = `${stageText} ${loaded} / ${total} (${TmViewer.Const.progressRatePrefix}${percentage}%)`;
+					} else {
+						// 第2段階以降は、ステージ名のみ表示
+						E.progressText.textContent = stageText;
+					}
+
+					// --- プログレスバーを更新 ---
+					// 各ステージの完了度合いに応じて、バーの進捗をマッピングします
+					let barPercentage = 0;
+					if (stage === 1) {
+						// 第1段階は最も時間がかかるため、バーの0% -> 80% を割り当てる
+						barPercentage = (total > 0) ? (loaded / total) * 80 : 0;
+					} else if (stage === 2) {
+						barPercentage = 85;
+					} else if (stage === 3) {
+						barPercentage = 90;
+					} else if (stage === 4) {
+						barPercentage = 95;
+					} else if (stage === 5) {
+						barPercentage = 100;
+					}
+
+					E.progressBar.style.width = `${barPercentage}%`;
 				}
 			});
 		}

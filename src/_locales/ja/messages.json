@@ -97,5 +97,31 @@
 	},
 	"placeholderDescription": {
 		"message": "このページは、セキュリティ上の理由で直接開けないタブの代替として表示されています。"
+	},
+	"restoreNotitle": {
+		"message": "タイトルなし"
+	},
+	"restoreProgressStage1Text": {
+		"message": "第1段階: タブを作成中..."
+	},
+	"restoreProgressStage2Text": {
+		"message": "第2段階: タブの並べ替え中..."
+	},
+	"restoreProgressStage3Text": {
+		"message": "第3段階: アクティブタブを設定中..."
+	},
+	"restoreProgressStage4Text": {
+		"message": "第4段階: ツリーの開閉状態を適用中..."
+	},
+	"restoreProgressStage5Text": {
+		"message": "第5段階（最終）: TST安定化のため$WAIT_SECOND$秒待機します...",
+		"placeholders": {
+			"wait_second": {
+				"content": "$1"
+			}
+		}
+	},
+	"restoreProgressRatePrefix": {
+		"message": "進捗率"
 	}
 }
