@@ -237,6 +237,10 @@ const TmBackground = {
 				};
 
 				try {
+					const GetMsg                 = TmCommon.Funcs.GetMsg;
+					const placeholderTitlePrefix = `${GetMsg('placeholderTitle')}:`;
+					const noTitleStr             = `${GetMsg('restoreNotitle')}:`;
+
 					// ---------------------------------------------------
 					// 第１段階の処理：タブ作成（スプリント＆休息方式）
 					// ---------------------------------------------------
@@ -244,13 +248,14 @@ const TmBackground = {
 
 					const createdTabsInfo = [];
 					const totalTabs       = tabsSortedByHierarchy.length;
-					const stage1Text      = '第1段階: タブを作成中...';
+					const stage1Text      = `${GetMsg('restoreProgressStage1Text')}`;
 					console.log(stage1Text);
 					sendProgressUpdate(1, stage1Text, 0, totalTabs);
 
-					// ★★★ [変更] スプリントカウンターを導入 ★★★
+					// スプリントカウンターを導入
 					let sprintCounter = 0;
 					const SPRINT_SIZE = 50; // 50タブごとに休息
+
 
 					for (const node of tabsSortedByHierarchy) {
 						// tryの範囲をforループ内全域に広げました。
@@ -266,7 +271,7 @@ const TmBackground = {
 										console.log(`プレースホルダURLをデコード: ${node.url} -> ${originalUrl}`);
 										node.url = originalUrl; // URLを本来のものに書き換える
 										// もし元のタイトルがなければ、デコードしたタイトルを使う
-										if (!node.title || node.title.startsWith('Restored Info:') || node.title.startsWith('復元情報:')) {
+										if (!node.title || node.title.startsWith(placeholderTitlePrefix)) {
 											if (originalTitle) {
 												node.title = originalTitle;
 											}
@@ -298,7 +303,7 @@ const TmBackground = {
 								createProperties.discarded = false;
 							} else if (node.url.startsWith('about:')) {
 								const originalUrl          = encodeURIComponent(node.url);
-								const originalTitle        = encodeURIComponent(node.title || 'タイトルなし');
+								const originalTitle        = encodeURIComponent(node.title || noTitleStr);
 								createProperties.url       = browser.runtime.getURL(`/viewer/placeholder.html?url=${originalUrl}&title=${originalTitle}`);
 								createProperties.discarded = false;
 							}
@@ -338,7 +343,7 @@ const TmBackground = {
 					// 第２段階の処理：ソーティング
 					// ---------------------------------------------------
 					console.log("第2段階: 並べ替えを開始します。");
-					const stage2Text = '第2段階: タブの並べ替え中...';
+					const stage2Text = `${GetMsg('restoreProgressStage2Text')}`;
 					console.log(stage2Text);
 					sendProgressUpdate(2, stage2Text);
 					const newTabIdsInCorrectOrder = tabsSortedByIndex.map(node => idMap.get(node.id)).filter(id => id);
@@ -355,7 +360,7 @@ const TmBackground = {
 					// 第3段階の処理：アクティブタブの設定
 					// ---------------------------------------------------
 					console.log("第3段階: アクティブタブを設定を開始します。");
-					const stage3Text = '第3段階: アクティブタブを設定中...';
+					const stage3Text = `${GetMsg('restoreProgressStage3Text')}`;
 					console.log(stage3Text);
 					sendProgressUpdate(3, stage3Text);
 
@@ -374,7 +379,7 @@ const TmBackground = {
 					// 第4段階の処理：ツリーの開閉状態を復元
 					// ---------------------------------------------------
 					console.log("第4段階: ツリー開閉状態の復元を開始します。");
-					const stage4Text = '第4段階: ツリーの開閉状態を適用中...';
+					const stage4Text = `${GetMsg('restoreProgressStage4Text')}`;
 					console.log(stage4Text);
 					sendProgressUpdate(4, stage4Text);
 					for (let i = createdTabsInfo.length - 1; i >= 0; i--) {
@@ -405,7 +410,8 @@ const TmBackground = {
 					// ---------------------------------------------------
 					console.log("第5段階: 最終処理（TSTの最終安定化のための待機）を開始します。");
 					const waitSecond = 5;
-					const stage5Text = `第5段階（最終）: TST安定化のため${waitSecond}秒待機します...`;
+					// const stage5Text = `第5段階（最終）: TST安定化のため${waitSecond}秒待機します...`;
+					const stage5Text = TmCommon.Funcs.GetMsg("restoreProgressStage5Text", waitSecond.toString());
 					console.log(stage5Text);
 					sendProgressUpdate(5, stage5Text);
 					console.log(`TSTの最終安定化のため、${waitSecond}秒間待機します...`);

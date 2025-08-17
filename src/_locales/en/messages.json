@@ -97,5 +97,31 @@
 	},
 	"placeholderDescription": {
 		"message": "This page is displayed as a substitute for a tab that cannot be opened directly for security reasons."
+	},
+	"restoreNotitle": {
+		"message": "Untitled"
+	},
+	"restoreProgressStage1Text": {
+		"message": "Stage 1: Creating tabs..."
+	},
+	"restoreProgressStage2Text": {
+		"message": "Stage 2: Sorting tabs..."
+	},
+	"restoreProgressStage3Text": {
+		"message": "Stage 3: Setting active tab..."
+	},
+	"restoreProgressStage4Text": {
+		"message": "Stage 4: Applying tree states..."
+	},
+	"restoreProgressStage5Text": {
+		"message": "Stage 5 (Final): Waiting $WAIT_SECOND$ seconds for TST to stabilize...",
+		"placeholders": {
+			"wait_second": {
+				"content": "$1"
+			}
+		}
+	},
+	"restoreProgressRatePrefix": {
+		"message": "Rate"
 	}
 }

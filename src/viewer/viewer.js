@@ -10,6 +10,13 @@
 const TmViewer = {
 
 	// ===================================================
+	// 定数
+	// ===================================================
+	Const: {
+		progressRatePrefix: null
+	},
+
+	// ===================================================
 	// DOM要素の参照
 	// ===================================================
 	Elements: {
@@ -38,6 +45,9 @@ const TmViewer = {
 			this.progressContainer = document.getElementById('progress-container');
 			this.loadingText       = document.getElementById('loading-text');
 			this.loadingContent    = document.querySelector('.loading-content');
+
+			// 進捗率の接頭辞設定
+			TmViewer.Const.progressRatePrefix = TmCommon.Funcs.GetMsg('restoreProgressRatePrefix');
 		}
 	},
 
@@ -364,7 +374,7 @@ const TmViewer = {
 					if (stage === 1) {
 						// 第1段階は、詳細情報（件数、パーセント）も表示
 						const percentage           = (total > 0) ? ((loaded / total) * 100).toFixed(1) : '0.0';
-						E.progressText.textContent = `${stageText} ${loaded} / ${total} (進捗${percentage}%)`;
+						E.progressText.textContent = `${stageText} ${loaded} / ${total} (${TmViewer.Const.progressRatePrefix}${percentage}%)`;
 					} else {
 						// 第2段階以降は、ステージ名のみ表示
 						E.progressText.textContent = stageText;
