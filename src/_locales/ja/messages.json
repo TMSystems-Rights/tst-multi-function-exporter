@@ -141,5 +141,9 @@
 	},
 	"confirmToSort": {
 		"message": "選択した階層をソートしますがよろしいですか？"
+	},
+	"errorConnectionLost": {
+		"message": "バックグラウンドとの接続が切れました。\n拡張機能が更新された可能性があります。\nお手数ですが、このページをリロードしてください。(F5キー)",
+		"description": "Error message when the connection to the background script is lost."
 	}
 }

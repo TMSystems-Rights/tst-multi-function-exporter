@@ -170,9 +170,10 @@ const TmBackground = {
 		 * ソート前に必要なツリーを展開する処理
 		 * データ取得を伴わないアクション（タブのフォーカス、削除、ソート）を処理します。
 		 * @param {object} message - viewer.jsからのメッセージオブジェクト。
+		 * @param {object} sender - メッセージの送信元情報。
 		 * @returns {Promise<object>} 処理結果。
 		 */
-		handleActionRequest: async function (message) {
+		handleActionRequest: async function (message, sender) {
 			try {
 				if (message.type === 'focus-tst-tab') {
 					await TmBackground.Helpers.focusTab(message.tabId);
@@ -180,11 +181,27 @@ const TmBackground = {
 					await browser.tabs.remove(message.tabId);
 				} else if (message.type === 'sort-tabs') {
 					const { parentTabId, sortedTabIds, ancestorIds } = message;
+					const viewerTabId                                = sender.tab?.id; // 送信元のタブIDを取得
+
 					console.log(`ソート開始: parent=${parentTabId || 'root'}, ids=`, sortedTabIds);
 
 					if (!sortedTabIds || sortedTabIds.length <= 1) {
 						return { success: true };
 					}
+
+					// 進捗通知用のヘルパー関数
+					const sendSortProgress = (loaded, total) => {
+						if (viewerTabId) {
+							browser.tabs.sendMessage(viewerTabId, {
+								type: 'update-sort-progress',
+								loaded,
+								total
+							}).catch(() => {}); // エラーは無視
+						}
+					};
+
+					// 最初に0%の状態を通知
+					sendSortProgress(0, sortedTabIds.length);
 
 					// ソート処理の前に、必要なツリーをすべて展開する
 					if (ancestorIds && ancestorIds.length > 0) {
@@ -218,10 +235,18 @@ const TmBackground = {
 								followChildren: true
 							});
 							await TmBackground.Helpers.sleep(150);
+
+							// 1件処理するごとに進捗を通知
+							const loadedCount = sortedTabIds.length - 1 - i;
+							sendSortProgress(loadedCount, sortedTabIds.length);
+
 						} catch (tstError) {
 							console.warn(`タブID ${tabToMove} の移動に失敗しました。`, tstError.message);
 						}
 					}
+
+					// 最後に100%の状態を通知
+					sendSortProgress(sortedTabIds.length, sortedTabIds.length);
 
 					console.log('ソート処理完了');
 				}
@@ -805,7 +830,7 @@ const TmBackground = {
 // メインのメッセージリスナー
 // ===================================================
 // eslint-disable-next-line no-unused-vars
-browser.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
+browser.runtime.onMessage.addListener((message, sender, _sendResponse) => { // sender を渡すよう修正
 	// Manifest V3の非永続的な環境で非同期処理を正しく扱うため、
 	// メッセージの種類に応じて、対応する非同期関数を呼び出し、その返り値(Promise)をreturnする。
 	switch (message.type) {
@@ -818,7 +843,7 @@ browser.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
 		case 'delete-tab':
 			return TmBackground.Handlers.handleActionRequest(message);
 		case 'sort-tabs':
-			return TmBackground.Handlers.handleActionRequest(message);
+			return TmBackground.Handlers.handleActionRequest(message, sender); // sender を渡すよう修正
 		case 'restore-tabs': {
 			const restoreData = message.data;
 			if (!restoreData || !Array.isArray(restoreData) || restoreData.length === 0) {
@@ -848,9 +873,13 @@ browser.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
 			return TmBackground.Handlers.handleRestoreRequest(windowsData);
 		}
 
-		//  ポーリングは不要になったのでget-restore-progressは削除しても良いが、念のため残す
+		// ポーリングは不要になったのでget-restore-progressは削除しても良いが、念のため残す
 		case 'get-restore-progress':
 			return Promise.resolve(TmBackground.State.restoreState);
+
+		// 処理途中でビューア画面との疎通が切れてしまわないようpingで対策
+		case 'ping':
+			return Promise.resolve({ success: true, message: 'pong' });
 		default:
 			console.error('不明なメッセージタイプを受信:', message.type);
 			return Promise.resolve({ success: false, error: 'Unknown message type' });

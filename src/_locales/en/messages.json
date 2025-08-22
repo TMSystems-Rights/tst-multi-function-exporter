@@ -141,5 +141,9 @@
 	},
 	"confirmToSort": {
 		"message": "Do you want to sort the selected hierarchy?"
+	},
+	"errorConnectionLost": {
+		"message": "Connection to the background has been lost.\nThe extension may have been updated.\nPlease reload this page. (F5 key)",
+		"description": "Error message when the connection to the background script is lost."
 	}
 }

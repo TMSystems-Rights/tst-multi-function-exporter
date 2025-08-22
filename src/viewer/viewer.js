@@ -367,6 +367,25 @@ const TmViewer = {
 			});
 		},
 
+		/**
+		 * 接続が切れた場合にUIを無効化し、リロードを促す
+		 */
+		showConnectionError: function () {
+			const E                   = TmViewer.Elements;
+			const message             = TmCommon.Funcs.GetMsg("errorConnectionLost");
+			E.loadingText.textContent = message;
+			// ボタン類を全て無効化
+			E.controlButtons.forEach(btn => btn.disabled = true);
+			document.querySelector('#mode-selector').disabled = true;
+
+			// マスクとメッセージだけ表示
+			E.loadingMask.classList.add('is-active');
+			E.loadingContent.style.display    = 'block';
+			E.progressContainer.style.display = 'none';
+			E.spinner.style.display           = 'none'; // スピナーは非表示
+		},
+
+
 		// コンテキストメニュー関連のヘルパーをまとめる
 		ContextMenu: {
 			/**
@@ -500,7 +519,8 @@ const TmViewer = {
 
 					// background.jsにソートを依頼
 					try {
-						TmViewer.UI.setLoadingState(true, 'loading', 'viewerSorting');
+						// restoringモードでプログレスバーを表示するように変更
+						TmViewer.UI.setLoadingState(true, 'restoring', 'viewerSorting');
 						const response = await browser.runtime.sendMessage({
 							type: 'sort-tabs',
 							parentTabId: parentTabIdForBg, // ルートの場合は null
@@ -542,7 +562,7 @@ const TmViewer = {
 					existingMenu.remove();
 				}
 			}
-		}
+		},
 	},
 
 
@@ -560,6 +580,18 @@ const TmViewer = {
 			TmViewer.UI.renderTree(true);
 			// 初期表示時のスタイルを適用
 			TmViewer.UI.updateModeStyles(TmViewer.State.currentMode);
+
+			// 5秒ごとにbackgroundとの接続を確認するpingを開始
+			setInterval(async () => {
+				try {
+					await browser.runtime.sendMessage({ type: 'ping' });
+				} catch (error) {
+					console.error('バックグラウンドとの接続が切れました。', error.message);
+					TmViewer.UI.showConnectionError();
+					// 一度エラーになったら、以降のpingを止める
+					// (実際にはこのsetInterval自体は止まらないが、UIが無効化されるので問題ない)
+				}
+			}, 5000); // 5秒ごと
 		},
 
 		/**
@@ -629,7 +661,16 @@ const TmViewer = {
 					}
 
 					E.progressBar.style.width = `${barPercentage}%`;
+
+
+				} else if (message.type === 'update-sort-progress') { // ソート処理時の進捗表示
+					const { loaded, total }    = message;
+					const percentage           = (total > 0) ? ((loaded / total) * 100).toFixed(1) : '0.0';
+					E.progressBar.style.width  = `${percentage}%`;
+					E.progressText.textContent = `${TmCommon.Funcs.GetMsg('viewerSorting')} ${loaded} / ${total} (${TmViewer.Const.progressRatePrefix}${percentage}%)`;
 				}
+
+
 			});
 		}
 	}
