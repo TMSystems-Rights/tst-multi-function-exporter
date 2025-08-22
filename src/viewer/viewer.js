@@ -110,7 +110,7 @@ const TmViewer = {
 		},
 
 		/**
-		 * ★★★ [修正版] 親タブを右クリックした際のソート対象を修正 ★★★
+		 * ★★★ [最終確定版] ユーザー様のアイデアに基づき、li要素を直接ハイライトする方式に全面刷新 ★★★
 		 * ツリーコンテナ内での右クリックでカスタムコンテキストメニューを表示します。
 		 * @param {MouseEvent} event - contextmenuイベント。
 		 */
@@ -137,20 +137,27 @@ const TmViewer = {
 					menu.appendChild(TmViewer.UI.ContextMenu.createDeleteMenuItem(tabText, tabId));
 				}
 			} else if (mode === 'sort') {
-				// 3. ★★★ [修正] ソート対象グループを特定するロジックをシンプルに統一 ★★★
+				// 3. ソート対象グループを特定する
 				let sortMenuItemId      = null;
-				let listToHighlight     = null;
 				let parentForDeleteMenu = null; // 削除メニュー用の親を特定
 
-				if (clickedLi.parentElement?.parentElement.id === 'tree-container') {
-					// ルート階層のタブがクリックされた
-					sortMenuItemId  = 'root';
-					listToHighlight = clickedLi.parentElement; // 兄弟が含まれるul要素
-				} else if (clickedLi.parentElement?.parentElement.classList.contains('parent')) {
-					// 子階層のタブがクリックされた (自身が親でも子でも同じ扱い)
-					parentForDeleteMenu = clickedLi.parentElement.parentElement;
-					sortMenuItemId      = parentForDeleteMenu.dataset.liId;
-					listToHighlight     = clickedLi.parentElement; // 兄弟が含まれるul要素
+				const parentUl = clickedLi.parentElement;
+				if (parentUl) {
+					// ★★★ [最重要修正] グループ内の各liにクラスを付与 ★★★
+					for (const childLi of parentUl.children) {
+						if (!childLi.classList.contains('pinned-tab')) {
+							childLi.classList.add('sort-target');
+						}
+					}
+
+					if (parentUl.parentElement.id === 'tree-container') {
+						// ルート階層
+						sortMenuItemId = 'root';
+					} else {
+						// 子階層
+						parentForDeleteMenu = parentUl.parentElement; // 親のli
+						sortMenuItemId      = parentForDeleteMenu.dataset.liId;
+					}
 				}
 
 				// 4. メニューを作成する
@@ -164,15 +171,6 @@ const TmViewer = {
 					const deleteTargetId    = parentForDeleteMenu ? parentForDeleteMenu.dataset.liId : tabId;
 					if (deleteTargetTitle && deleteTargetId) {
 						menu.appendChild(TmViewer.UI.ContextMenu.createDeleteMenuItem(deleteTargetTitle, deleteTargetId));
-					}
-				}
-
-				// 5. ハイライト処理
-				if (listToHighlight) {
-					for (const childLi of listToHighlight.children) {
-						if (!childLi.classList.contains('pinned-tab')) {
-							childLi.querySelector(':scope > .li-content')?.classList.add('sort-target');
-						}
 					}
 				}
 			}
@@ -483,12 +481,12 @@ const TmViewer = {
 			},
 
 			/**
-			 * ★★★ [変更] ハイライト解除処理を追加 ★★★
+			 * ★★★ [修正] liに付けたハイライトクラスを解除する ★★★
 			 * 表示されているカスタムコンテキストメニューを閉じます。
 			 */
 			close: function () {
 				// ハイライトを解除
-				document.querySelectorAll('.li-content.sort-target').forEach(el => {
+				document.querySelectorAll('li.sort-target').forEach(el => {
 					el.classList.remove('sort-target');
 				});
 				// 既存のメニューを削除

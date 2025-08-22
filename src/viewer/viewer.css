@@ -83,6 +83,8 @@ li {
 	/* 上と左罫線だけ。下罫線は引かない（二重被り防止） */
 	border-top: 1px solid #999;
 	border-left: 1px solid #999;
+	/* 選択したソート対象の階層をハイライトするため、子要素のliに伝播しないようデフォルト背景色を設定 */
+	background-color: #333;
 }
 
 /* 最後のliの下線を消す */
@@ -243,9 +245,9 @@ li.parent.open>ul {
 	background-color: #e0e0e0;
 }
 
-/* ★★★ [新設] ソート対象として右クリックされた親要素のスタイル ★★★ */
-.li-content.sort-target {
-	background-color: #777 !important;
+/* ★★★ [最終解決策] ユーザー様案に基づき、li要素を直接ハイライト ★★★ */
+li.sort-target {
+	background-color: #777;
 }
 
 /* ========================
