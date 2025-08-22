@@ -123,5 +123,23 @@
 	},
 	"restoreProgressRatePrefix": {
 		"message": "進捗率"
+	},
+	"viewerModeBrowse": {
+		"message": "参照モード"
+	},
+	"viewerModeSort": {
+		"message": "ソート編集モード"
+	},
+	"contextMenuSort": {
+		"message": "この階層をタイトル昇順でソート"
+	},
+	"viewerSorting": {
+		"message": "タブをソート中..."
+	},
+	"confirmToDelte": {
+		"message": "選択したタブを削除しますがよろしいですか？"
+	},
+	"confirmToSort": {
+		"message": "選択した階層をソートしますがよろしいですか？"
 	}
 }

@@ -9,6 +9,17 @@
 	<body>
 		<h1 data-i18n="viewerTitle"></h1>
 		<div class="controls">
+			<!-- モード選択ラジオボタン -->
+			<div id="mode-selector">
+				<label
+					><input type="radio" name="view-mode" value="browse" checked />
+					<span data-i18n="viewerModeBrowse"></span>
+				</label>
+				<label>
+					<input type="radio" name="view-mode" value="sort" />
+					<span data-i18n="viewerModeSort"></span>
+				</label>
+			</div>
 			<button id="refreshBtn" data-i18n="viewerRefreshButton"></button>
 			<button id="expandAll" data-i18n="viewerExpandAllButton"></button>
 			<button id="collapseAll" data-i18n="viewerCollapseAllButton"></button>
@@ -21,15 +32,15 @@
 		</div>
 
 		<div id="loading-mask" class="loading-mask">
-			<!-- ★★★ 通常読み込み時に表示するメッセージとスピナーを格納するコンテナ ★★★ -->
+			<!-- 通常読み込み時に表示するメッセージとスピナーを格納するコンテナ -->
 			<div class="loading-content">
-				<!-- ★★★ ローディングメッセージ用のpタグ ★★★ -->
+				<!-- ローディングメッセージ用のpタグ -->
 				<p id="loading-text"></p>
-				<!-- ★★★ スピナー ★★★ -->
+				<!-- スピナー -->
 				<div id="spinner" class="spinner"></div>
 			</div>
 
-			<!-- ★★★ タブ復元時に表示するプログレスバー ★★★ -->
+			<!-- タブ復元時に表示するプログレスバー -->
 			<div id="progress-container">
 				<p id="progress-text"></p>
 				<div id="progress-bar-wrapper">

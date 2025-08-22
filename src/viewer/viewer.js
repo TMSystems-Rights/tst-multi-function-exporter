@@ -17,6 +17,13 @@ const TmViewer = {
 	},
 
 	// ===================================================
+	// グローバルな状態管理
+	// ===================================================
+	State: {
+		currentMode: 'browse', // 'browse' or 'sort'
+	},
+
+	// ===================================================
 	// DOM要素の参照
 	// ===================================================
 	Elements: {
@@ -30,6 +37,7 @@ const TmViewer = {
 		progressContainer: null,
 		loadingText: null,
 		loadingContent: null,
+		modeSelector: null,
 
 		/**
 		 * DOM要素の参照を初期化する
@@ -45,6 +53,7 @@ const TmViewer = {
 			this.progressContainer = document.getElementById('progress-container');
 			this.loadingText       = document.getElementById('loading-text');
 			this.loadingContent    = document.querySelector('.loading-content');
+			this.modeSelector      = document.getElementById('mode-selector');
 
 			// 進捗率の接頭辞設定
 			TmViewer.Const.progressRatePrefix = TmCommon.Funcs.GetMsg('restoreProgressRatePrefix');
@@ -103,17 +112,70 @@ const TmViewer = {
 		 * @param {MouseEvent} event - contextmenuイベント。
 		 */
 		handleTreeContextMenu: function (event) {
-			if (event.target.tagName === 'A') {
-				event.preventDefault();
-				TmViewer.UI.ContextMenu.close();
-				const tabId = event.target.dataset.tabId;
-				if (!tabId) return;
-				const menu     = TmViewer.UI.ContextMenu.create(event.clientX, event.clientY);
-				const menuItem = TmViewer.UI.ContextMenu.createDeleteMenuItem(event.target.textContent, tabId);
-				menu.appendChild(menuItem);
+			event.preventDefault();
+			TmViewer.UI.ContextMenu.close();
+
+			const mode = TmViewer.State.currentMode;
+
+			// 1. クリックされた場所から、最も近い`<li>`要素を探す
+			const clickedLi = event.target.closest('li');
+			if (!clickedLi) return; // li要素の上でなければ何もしない
+
+			// 2. `<li>`要素から`<a>`タグの情報を取得する
+			const clickedA = clickedLi.querySelector(':scope > .li-content a');
+			if (!clickedA) return;
+			const tabId   = clickedA.dataset.tabId;
+			const tabText = clickedA.textContent;
+
+			const menu = TmViewer.UI.ContextMenu.create(event.clientX, event.clientY);
+
+			if (mode === 'browse') {
+				if (tabId !== 'pinned') {
+					menu.appendChild(TmViewer.UI.ContextMenu.createDeleteMenuItem(tabText, tabId));
+				}
+			} else if (mode === 'sort') {
+				// 3. ソート対象グループを特定する
+				let sortMenuItemId      = null;
+				let parentForDeleteMenu = null; // 削除メニュー用の親を特定
+
+				const parentUl = clickedLi.parentElement;
+				if (parentUl) {
+					// グループ内の各liにクラスを付与
+					for (const childLi of parentUl.children) {
+						if (!childLi.classList.contains('pinned-tab')) {
+							childLi.classList.add('sort-target');
+						}
+					}
+
+					if (parentUl.parentElement.id === 'tree-container') {
+						// ルート階層
+						sortMenuItemId = 'root';
+					} else {
+						// 子階層
+						parentForDeleteMenu = parentUl.parentElement; // 親のli
+						sortMenuItemId      = parentForDeleteMenu.dataset.liId;
+					}
+				}
+
+				// 4. メニューを作成する
+				if (sortMenuItemId) {
+					menu.appendChild(TmViewer.UI.ContextMenu.createSortMenuItem(sortMenuItemId));
+				}
+
+				if (tabId !== 'pinned') {
+					// 削除メニューは、クリックされたタブ自身を対象に追加
+					const deleteTargetTitle = parentForDeleteMenu ? parentForDeleteMenu.querySelector('a')?.textContent : tabText;
+					const deleteTargetId    = parentForDeleteMenu ? parentForDeleteMenu.dataset.liId : tabId;
+					if (deleteTargetTitle && deleteTargetId) {
+						menu.appendChild(TmViewer.UI.ContextMenu.createDeleteMenuItem(deleteTargetTitle, deleteTargetId));
+					}
+				}
+			}
+
+			if (menu.hasChildNodes()) {
 				document.body.appendChild(menu);
 			}
-		}
+		},
 	},
 
 	// ===================================================
@@ -203,8 +265,17 @@ const TmViewer = {
 			let html = '<ul>';
 			for (const node of nodes) {
 				const hasChildren = node.children && node.children.length > 0;
-				html             += `<li${hasChildren ? ' class="parent"' : ''} data-li-id="${node.id}">`;
-				let iconImg       = '';
+				const classes     = [];
+				if (hasChildren) {
+					classes.push('parent');
+				}
+				if (node.pinned) { // node.pinnedプロパティをチェック
+					classes.push('pinned-tab');
+				}
+				const classAttr = classes.length > 0 ? ` class="${classes.join(' ')}"` : '';
+				html           += `<li${classAttr} data-li-id="${node.id}">`;
+
+				let iconImg = '';
 				if (node.favIconUrl) {
 					iconImg = `<div class="favicon-wrapper"><img src="${this.escapeHtml(node.favIconUrl)}" class="favicon" alt=""></div>`;
 				} else {
@@ -271,6 +342,30 @@ const TmViewer = {
 			return p.innerHTML;
 		},
 
+		/**
+		 * モードに応じてUIの全体的なスタイルを更新する
+		 * @param {'browse' | 'sort'} mode - 現在のモード。
+		 */
+		updateModeStyles: function (mode) {
+			const body = document.body;
+			if (mode === 'sort') {
+				body.classList.add('sort-mode-active');
+			} else {
+				body.classList.remove('sort-mode-active');
+			}
+
+			// ラベルの選択状態を更新
+			const labels = document.querySelectorAll('#mode-selector label');
+			labels.forEach(label => {
+				const input = label.querySelector('input[type="radio"]');
+				if (input && input.checked) {
+					label.classList.add('selected');
+				} else {
+					label.classList.remove('selected');
+				}
+			});
+		},
+
 		// コンテキストメニュー関連のヘルパーをまとめる
 		ContextMenu: {
 			/**
@@ -299,6 +394,12 @@ const TmViewer = {
 				menuItem.innerText = `${TmCommon.Funcs.GetMsg("contextMenuDelete") || 'このタブを削除'}\n${title}`;
 				menuItem.addEventListener('click', async () => {
 					try {
+						// 確認ダイアログ
+						if (!confirm(TmCommon.Funcs.GetMsg('confirmToDelte'))) {
+							this.close(); // キャンセル時はメニューを閉じる
+							return;
+						}
+
 						const openParentIds = TmViewer.UI.getOpenParentIds();
 						const scrollY       = window.scrollY;
 						const response      = await browser.runtime.sendMessage({ type: 'delete-tab', tabId: parseInt(tabId, 10) });
@@ -315,9 +416,126 @@ const TmViewer = {
 			},
 
 			/**
+			 * 「この階層をソート」のメニュー項目を作成します。
+			 * @param {string} targetId - ソート対象の親タブのID、または 'root'。
+			 * @returns {HTMLDivElement} - 生成されたメニュー項目のDOM要素。
+			 */
+			createSortMenuItem: function (targetId) {
+				const menuItem     = document.createElement('div');
+				menuItem.className = 'custom-context-menu-item';
+				menuItem.innerText = TmCommon.Funcs.GetMsg("contextMenuSort") || 'この階層をタイトル昇順でソート';
+
+				menuItem.addEventListener('click', async () => {
+					// 確認ダイアログ
+					if (!confirm(TmCommon.Funcs.GetMsg('confirmToSort'))) {
+						this.close(); // キャンセル時はメニューを閉じる
+						return;
+					}
+
+					let childListElement = null;
+					let parentTabIdForBg = null;
+					const ancestorIds    = []; // [追加] 祖先タブのIDを格納する配列
+
+					if (targetId === 'root') {
+						// ルート階層のソート
+						childListElement = document.querySelector('#tree-container > ul');
+						parentTabIdForBg = null; // background.js へは null を渡す
+					} else {
+						// 通常階層のソート
+						const parentLi = document.querySelector(`li[data-li-id="${targetId}"]`);
+						if (!parentLi) {
+							this.close();
+							return;
+						}
+						childListElement = parentLi.querySelector(':scope > ul');
+						parentTabIdForBg = parseInt(targetId, 10);
+
+						// 祖先をルートまで遡ってIDを収集する
+						let current = parentLi;
+						while (current && current.parentElement?.parentElement.id !== 'tree-container') {
+							const ancestorLi = current.parentElement.parentElement;
+							if (ancestorLi && ancestorLi.tagName === 'LI') {
+								ancestorIds.unshift(parseInt(ancestorLi.dataset.liId, 10));
+								current = ancestorLi;
+							} else {
+								break;
+							}
+						}
+						ancestorIds.push(parentTabIdForBg); // 自分自身も展開対象に含める
+					}
+
+					if (!childListElement) {
+						this.close();
+						return;
+					}
+
+					// 子要素のタブ情報を収集
+					const childrenInfo = [];
+					for (const childLi of childListElement.children) {
+						if (childLi.tagName !== 'LI') continue;
+						const link = childLi.querySelector(':scope > .li-content a');
+						// プレースホルダーと、実際のピン留めタブ(.pinned-tabクラス)の両方を除外
+						if (link && link.dataset.tabId && link.dataset.tabId !== 'pinned' && !childLi.classList.contains('pinned-tab')) {
+							childrenInfo.push({
+								id: parseInt(link.dataset.tabId, 10),
+								title: (link.textContent || '').trim().toLowerCase()
+							});
+						}
+					}
+
+					// ソート対象が1つ以下なら何もしない
+					if (childrenInfo.length <= 1) {
+						this.close();
+						return;
+					}
+
+					console.log('ソート前の配列:', JSON.parse(JSON.stringify(childrenInfo)));
+
+					// タイトルでソート(数値も考慮した自然順ソート)
+					childrenInfo.sort((a, b) => a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' }));
+
+					const sortedTabIds = childrenInfo.map(info => info.id);
+					console.log('ソート後のID配列:', sortedTabIds);
+
+					// background.jsにソートを依頼
+					try {
+						TmViewer.UI.setLoadingState(true, 'loading', 'viewerSorting');
+						const response = await browser.runtime.sendMessage({
+							type: 'sort-tabs',
+							parentTabId: parentTabIdForBg, // ルートの場合は null
+							sortedTabIds: sortedTabIds,
+							ancestorIds: ancestorIds // 祖先IDリストを渡す
+						});
+						if (response && response.success) {
+							// ソート成功後、TST側での処理反映を待ってから再描画
+							setTimeout(() => {
+								const openParentIds = TmViewer.UI.getOpenParentIds();
+								const scrollY       = window.scrollY;
+								TmViewer.UI.renderTree(false, { openIds: openParentIds, scrollY: scrollY });
+							}, 800);
+						} else {
+							throw new Error(response.error || 'ソート処理に失敗しました。');
+						}
+					} catch (err) {
+						alert(TmCommon.Funcs.GetMsg("errorGeneric", err.message));
+						console.error('タブのソートに失敗しました:', err);
+						TmViewer.UI.setLoadingState(false);
+					} finally {
+						this.close();
+					}
+				});
+				return menuItem;
+			},
+
+			/**
 			 * 表示されているカスタムコンテキストメニューを閉じます。
 			 */
 			close: function () {
+				// ハイライトを解除
+				document.querySelectorAll('li.sort-target').forEach(el => {
+					el.classList.remove('sort-target');
+				});
+				// 既存のメニューを削除
 				const existingMenu = document.querySelector('.custom-context-menu');
 				if (existingMenu) {
 					existingMenu.remove();
@@ -339,6 +557,8 @@ const TmViewer = {
 			TmCommon.Funcs.SetDocumentLocale();
 			this.setupEventListeners();
 			TmViewer.UI.renderTree(true);
+			// 初期表示時のスタイルを適用
+			TmViewer.UI.updateModeStyles(TmViewer.State.currentMode);
 		},
 
 		/**
@@ -349,11 +569,22 @@ const TmViewer = {
 			const UI       = TmViewer.UI;
 			const Handlers = TmViewer.Handlers;
 
+			const State = TmViewer.State;
+
 			document.getElementById('refreshBtn').addEventListener('click', () => UI.renderTree(true));
 			document.getElementById('expandAll').addEventListener('click', UI.expandAll);
 			document.getElementById('collapseAll').addEventListener('click', UI.collapseAll);
 			document.getElementById('restoreBtn').addEventListener('click', () => E.fileInput.click());
 			E.fileInput.addEventListener('change', Handlers.handleFileSelect);
+
+			// モード切替時にスタイル更新関数を呼び出す
+			E.modeSelector.addEventListener('change', (event) => {
+				State.currentMode = event.target.value;
+				console.log(`モードが "${State.currentMode}" に変更されました。`);
+				UI.updateModeStyles(State.currentMode); // スタイル更新
+				// モードが切り替わったらメニューとハイライトを閉じる
+				UI.ContextMenu.close();
+			});
 
 			document.addEventListener('click', UI.ContextMenu.close);
 			E.treeContainer.addEventListener('click', Handlers.handleTreeClick);
