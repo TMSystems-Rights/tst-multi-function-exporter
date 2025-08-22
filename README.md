@@ -11,10 +11,10 @@ Also, from version 2.1.0 onwards, you can fully restore tabs using a JSON file.
 A new feature (version 2.2.0) has been added to the viewer screen: "Sort Edit Mode." Tabs within the same hierarchy can be sorted in ascending order by title.
 
 ### ＝＝＝ ビューア画面（参照モード） ＝＝＝
-<img width="1853" height="1199" alt="image" src="https://github.com/user-attachments/assets/8e3d5f38-6d70-4456-802e-19170e33dfb3" />
+<img width="2268" height="1216" alt="image" src="https://github.com/user-attachments/assets/5b7ad2a9-8d8a-4805-af8e-3a7184a29eba" />
 
 ### ＝＝＝ ビューア画面（ソート編集モード） ＝＝＝
-<img width="1909" height="1232" alt="image" src="https://github.com/user-attachments/assets/c41f9beb-d6ab-4387-a0fe-e88f7e6869a4" />
+<img width="2275" height="1205" alt="image" src="https://github.com/user-attachments/assets/26a4b671-6def-437c-802c-2a00a43d795b" />
 
 ### ＝＝＝ 出力イメージ（JSON, TSV） ＝＝＝
 <img width="3044" height="1657" alt="image" src="https://github.com/user-attachments/assets/9eade6ad-0c7b-4556-842c-5b147befbc24" />
