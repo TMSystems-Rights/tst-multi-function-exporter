@@ -16,7 +16,32 @@ h1 {
 
 .controls {
 	margin-bottom: 20px;
+	/* ★★★ [新設] flexboxで要素を横並びにする ★★★ */
+	display: flex;
+	align-items: center;
+	/* 要素間のスペース */
+	gap: 10px;
 }
+
+/* ★★★ [新設] モードセレクターのスタイル ★★★ */
+#mode-selector {
+	border: 1px solid #999;
+	padding: 5px 10px;
+	border-radius: 4px;
+	margin-right: 10px;
+	/* 右側のボタンとのスペース */
+}
+
+#mode-selector label {
+	margin-right: 10px;
+	cursor: pointer;
+}
+
+#mode-selector label:last-child {
+	margin-right: 0;
+}
+
+/* ★★★ ここまで ★★★ */
 
 button {
 	padding: 5px 10px;
@@ -202,22 +227,26 @@ li.parent.open>ul {
 	box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
 	padding: 5px 0;
 	min-width: 150px;
-	color: #333;
 	/* メニューのテキスト色 */
+	color: #333;
 }
 
 .custom-context-menu-item {
 	padding: 8px 15px;
 	cursor: pointer;
 	font-size: 14px;
-	white-space: pre-wrap;
 	/* タイトルが長い場合に改行を許可 */
+	white-space: pre-wrap;
 }
 
 .custom-context-menu-item:hover {
 	background-color: #e0e0e0;
 }
 
+/* ★★★ [新設] ソート対象として右クリックされた親要素のスタイル ★★★ */
+.li-content.sort-target {
+	background-color: #777 !important;
+}
 
 /* ========================
  * ローディングマスク
@@ -228,7 +257,7 @@ li.parent.open>ul {
 	left: 0;
 	width: 100%;
 	height: 100%;
-	/* ★★★ [修正] マスクの色を少し薄く、より一般的なrgba表記に ★★★ */
+	/* マスクの色を少し薄く、より一般的なrgba表記に  */
 	background-color: rgba(20, 20, 20, 0.7);
 	display: flex;
 	justify-content: center;
@@ -245,7 +274,7 @@ li.parent.open>ul {
 	visibility: visible;
 }
 
-/* ★★★メッセージとスピナーをまとめるコンテナ ★★★ */
+/* メッセージとスピナーをまとめるコンテナ */
 .loading-content {
 	text-align: center;
 	color: #fff;
@@ -253,7 +282,7 @@ li.parent.open>ul {
 	display: none;
 }
 
-/* ★★★ ローディングメッセージのスタイル ★★★ */
+/* ローディングメッセージのスタイル */
 #loading-text {
 	font-size: 1.1em;
 	margin-bottom: 20px;

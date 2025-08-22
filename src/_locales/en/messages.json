@@ -123,5 +123,21 @@
 	},
 	"restoreProgressRatePrefix": {
 		"message": "Rate"
+	},
+	"viewerModeBrowse": {
+		"message": "Reference Mode",
+		"description": "Label for the browse mode radio button in the viewer."
+	},
+	"viewerModeSort": {
+		"message": "Sort Edit Mode",
+		"description": "Label for the sort edit mode radio button in the viewer."
+	},
+	"contextMenuSort": {
+		"message": "Sort this node by title in ascending order",
+		"description": "Context menu item to sort the children of a tab."
+	},
+	"viewerSorting": {
+		"message": "Sorting tabs...",
+		"description": "Loading message displayed while tabs are being sorted."
 	}
 }

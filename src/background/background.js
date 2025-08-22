@@ -167,7 +167,8 @@ const TmBackground = {
 		},
 
 		/**
-		 * データ取得を伴わないアクション（タブのフォーカス、削除）を処理します。
+		 * ★★★ [最終解決策] 不安定なmove-afterを廃止し、move-beforeを使った逆順処理に全面刷新 ★★★
+		 * データ取得を伴わないアクション（タブのフォーカス、削除、ソート）を処理します。
 		 * @param {object} message - viewer.jsからのメッセージオブジェクト。
 		 * @returns {Promise<object>} 処理結果。
 		 */
@@ -177,6 +178,35 @@ const TmBackground = {
 					await TmBackground.Helpers.focusTab(message.tabId);
 				} else if (message.type === 'delete-tab') {
 					await browser.tabs.remove(message.tabId);
+				} else if (message.type === 'sort-tabs') {
+					const { parentTabId, sortedTabIds } = message;
+					console.log(`ソート開始: parent=${parentTabId || 'root'}, ids=`, sortedTabIds);
+
+					if (!sortedTabIds || sortedTabIds.length <= 1) {
+						return { success: true };
+					}
+
+					// 配列の末尾から先頭に向かって処理する (逆順処理)
+					// i は末尾から2番目の要素のインデックスから開始
+					for (let i = sortedTabIds.length - 2; i >= 0; i--) {
+						const tabToMove      = sortedTabIds[i];
+						const referenceTabId = sortedTabIds[i + 1]; // 基準となるのは、常に自分の「次」に来るべきタブ
+
+						try {
+							console.log(`[move-before] タブID ${tabToMove} を タブID ${referenceTabId} の直前へ移動`);
+							await browser.runtime.sendMessage(TmBackground.Const.TST_ID, {
+								type: 'move-before',
+								tab: tabToMove,
+								referenceTabId: referenceTabId,
+								followChildren: true
+							});
+							await TmBackground.Helpers.sleep(150);
+						} catch (tstError) {
+							console.warn(`タブID ${tabToMove} の移動に失敗しました。`, tstError.message);
+						}
+					}
+
+					console.log('ソート処理完了');
 				}
 				return { success: true };
 			} catch (err) {
@@ -437,6 +467,55 @@ const TmBackground = {
 	// ヘルパー関数群
 	// ===================================================
 	Helpers: {
+		/**
+		 * ★★★ [新設] ソート処理でツリー構造を高速に参照するためのMapを作成する ★★★
+		 * TSTから取得したツリー配列を、IDをキーにしたMapに変換します。
+		 * @param {Array<object>} nodes - TSTのツリー構造データ。
+		 * @returns {Map<number, object>} - タブIDをキー、タブオブジェクトを値とするMap。
+		 */
+		buildTabMap: function (nodes) {
+			const map = new Map();
+			/**
+			 *
+			 */
+			function traverse(node) {
+				map.set(node.id, node);
+				if (node.children && node.children.length > 0) {
+					for (const child of node.children) {
+						traverse(child);
+					}
+				}
+			}
+			for (const node of nodes) {
+				traverse(node);
+			}
+			return map;
+		},
+
+		/**
+		 * ★★★ [新設] 指定されたタブのツリーにおける最後の末裔（子孫）のIDを見つける ★★★
+		 * @param {number} tabId - 調査対象のタブID。
+		 * @param {Map<number, object>} tabMap - buildTabMapで作成したMap。
+		 * @returns {number|null} - 最後の末裔のタブID。子がいなければ自身のIDを返す。
+		 */
+		findLastDescendant: function (tabId, tabMap) {
+			let currentNode = tabMap.get(tabId);
+			if (!currentNode) {
+				return null; // マップに存在しない場合はnull
+			}
+
+			// 子がいなくなるまで、一番最後の子をたどっていく
+			while (currentNode.children && currentNode.children.length > 0) {
+				const lastChildId = currentNode.children[currentNode.children.length - 1].id;
+				const nextNode    = tabMap.get(lastChildId);
+				if (!nextNode) {
+					break; // 念のため、次のノードがマップに存在しない場合はループを抜ける
+				}
+				currentNode = nextNode;
+			}
+			return currentNode.id;
+		},
+
 		/**
 		 * 指定されたミリ秒だけ処理を待機します。(UIスレッドはブロックしない)
 		 * @param {number} ms - 待機する時間（ミリ秒）。
@@ -722,7 +801,8 @@ browser.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
 		case 'focus-tst-tab':
 		case 'delete-tab':
 			return TmBackground.Handlers.handleActionRequest(message);
-
+		case 'sort-tabs': // ★★★ [追加] ★★★
+			return TmBackground.Handlers.handleActionRequest(message);
 		case 'restore-tabs': {
 			const restoreData = message.data;
 			if (!restoreData || !Array.isArray(restoreData) || restoreData.length === 0) {
@@ -752,7 +832,7 @@ browser.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
 			return TmBackground.Handlers.handleRestoreRequest(windowsData);
 		}
 
-		// ★★★ [変更] ポーリングは不要になったのでget-restore-progressは削除しても良いが、念のため残す ★★★
+		//  ポーリングは不要になったのでget-restore-progressは削除しても良いが、念のため残す
 		case 'get-restore-progress':
 			return Promise.resolve(TmBackground.State.restoreState);
 		default:
