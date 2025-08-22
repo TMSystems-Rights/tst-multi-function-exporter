@@ -110,7 +110,7 @@ const TmViewer = {
 		},
 
 		/**
-		 * ★★★ [修正版] ルート階層のソートに対応 ★★★
+		 * ★★★ [修正版] 親タブを右クリックした際のソート対象を修正 ★★★
 		 * ツリーコンテナ内での右クリックでカスタムコンテキストメニューを表示します。
 		 * @param {MouseEvent} event - contextmenuイベント。
 		 */
@@ -137,21 +137,20 @@ const TmViewer = {
 					menu.appendChild(TmViewer.UI.ContextMenu.createDeleteMenuItem(tabText, tabId));
 				}
 			} else if (mode === 'sort') {
-				// 3. ソート対象となる親`<li>` (またはルート) を判定する
-				let sortTargetParentLi = null;
-				let sortMenuItemId     = null;
+				// 3. ★★★ [修正] ソート対象グループを特定するロジックをシンプルに統一 ★★★
+				let sortMenuItemId      = null;
+				let listToHighlight     = null;
+				let parentForDeleteMenu = null; // 削除メニュー用の親を特定
 
-				if (clickedLi.classList.contains('parent')) {
-					// 親タブ自身がクリックされた
-					sortTargetParentLi = clickedLi;
-					sortMenuItemId     = sortTargetParentLi.dataset.liId;
-				} else if (clickedLi.parentElement?.parentElement.id === 'tree-container') {
+				if (clickedLi.parentElement?.parentElement.id === 'tree-container') {
 					// ルート階層のタブがクリックされた
-					sortMenuItemId = 'root';
+					sortMenuItemId  = 'root';
+					listToHighlight = clickedLi.parentElement; // 兄弟が含まれるul要素
 				} else if (clickedLi.parentElement?.parentElement.classList.contains('parent')) {
-					// 通常階層の子タブがクリックされた
-					sortTargetParentLi = clickedLi.parentElement.parentElement;
-					sortMenuItemId     = sortTargetParentLi.dataset.liId;
+					// 子階層のタブがクリックされた (自身が親でも子でも同じ扱い)
+					parentForDeleteMenu = clickedLi.parentElement.parentElement;
+					sortMenuItemId      = parentForDeleteMenu.dataset.liId;
+					listToHighlight     = clickedLi.parentElement; // 兄弟が含まれるul要素
 				}
 
 				// 4. メニューを作成する
@@ -161,29 +160,17 @@ const TmViewer = {
 
 				if (tabId !== 'pinned') {
 					// 削除メニューは、クリックされたタブ自身を対象に追加
-					const deleteTargetTitle = sortTargetParentLi ? sortTargetParentLi.querySelector('a')?.textContent : tabText;
-					const deleteTargetId    = sortTargetParentLi ? sortTargetParentLi.dataset.liId : tabId;
+					const deleteTargetTitle = parentForDeleteMenu ? parentForDeleteMenu.querySelector('a')?.textContent : tabText;
+					const deleteTargetId    = parentForDeleteMenu ? parentForDeleteMenu.dataset.liId : tabId;
 					if (deleteTargetTitle && deleteTargetId) {
 						menu.appendChild(TmViewer.UI.ContextMenu.createDeleteMenuItem(deleteTargetTitle, deleteTargetId));
 					}
 				}
 
-				// 5. ハイライト処理 (ソート対象を視覚的に示す)
-				if (sortMenuItemId === 'root') {
-					const rootUl = document.querySelector('#tree-container > ul');
-					if (rootUl) {
-						for (const childLi of rootUl.children) {
-							// ピン留めタブはハイライトしない
-							if (childLi.querySelector('a')?.dataset.tabId !== 'pinned') {
-								childLi.querySelector('.li-content')?.classList.add('sort-target');
-							}
-						}
-					}
-				} else if (sortTargetParentLi) {
-					// 親タブ(sortTargetParentLi)の直下の子タブのみをハイライトする
-					const childUl = sortTargetParentLi.querySelector(':scope > ul');
-					if (childUl) {
-						for (const childLi of childUl.children) {
+				// 5. ハイライト処理
+				if (listToHighlight) {
+					for (const childLi of listToHighlight.children) {
+						if (!childLi.classList.contains('pinned-tab')) {
 							childLi.querySelector(':scope > .li-content')?.classList.add('sort-target');
 						}
 					}
