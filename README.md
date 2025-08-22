@@ -16,8 +16,8 @@ A new feature (version 2.2.0) has been added to the viewer screen: "Sort Edit Mo
 ### ＝＝＝ ビューア画面（ソート編集モード） ＝＝＝
 <img width="1909" height="1232" alt="image" src="https://github.com/user-attachments/assets/c41f9beb-d6ab-4387-a0fe-e88f7e6869a4" />
 
-### ＝＝＝ 出力イメージ ＝＝＝
-<img width="500" height="700" alt="image" src="https://github.com/user-attachments/assets/6a096036-dbc3-42ab-9baa-8d229e81ec61" />
+### ＝＝＝ 出力イメージ（JSON, TSV） ＝＝＝
+<img width="3044" height="1657" alt="image" src="https://github.com/user-attachments/assets/9eade6ad-0c7b-4556-842c-5b147befbc24" />
 
 ---
 
