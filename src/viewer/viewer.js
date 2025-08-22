@@ -368,7 +368,7 @@ const TmViewer = {
 		},
 
 		/**
-		 * ★★★ [新設] 接続が切れた場合にUIを無効化し、リロードを促す ★★★
+		 * 接続が切れた場合にUIを無効化し、リロードを促す
 		 */
 		showConnectionError: function () {
 			const E                   = TmViewer.Elements;
@@ -519,7 +519,8 @@ const TmViewer = {
 
 					// background.jsにソートを依頼
 					try {
-						TmViewer.UI.setLoadingState(true, 'loading', 'viewerSorting');
+						// restoringモードでプログレスバーを表示するように変更
+						TmViewer.UI.setLoadingState(true, 'restoring', 'viewerSorting');
 						const response = await browser.runtime.sendMessage({
 							type: 'sort-tabs',
 							parentTabId: parentTabIdForBg, // ルートの場合は null
@@ -580,7 +581,7 @@ const TmViewer = {
 			// 初期表示時のスタイルを適用
 			TmViewer.UI.updateModeStyles(TmViewer.State.currentMode);
 
-			// ★★★ [追加] 5秒ごとにbackgroundとの接続を確認するハートビートを開始 ★★★
+			// 5秒ごとにbackgroundとの接続を確認するpingを開始
 			setInterval(async () => {
 				try {
 					await browser.runtime.sendMessage({ type: 'ping' });
@@ -660,7 +661,16 @@ const TmViewer = {
 					}
 
 					E.progressBar.style.width = `${barPercentage}%`;
+
+
+				} else if (message.type === 'update-sort-progress') { // ソート処理時の進捗表示
+					const { loaded, total }    = message;
+					const percentage           = (total > 0) ? ((loaded / total) * 100).toFixed(1) : '0.0';
+					E.progressBar.style.width  = `${percentage}%`;
+					E.progressText.textContent = `${TmCommon.Funcs.GetMsg('viewerSorting')} ${loaded} / ${total} (${TmViewer.Const.progressRatePrefix}${percentage}%)`;
 				}
+
+
 			});
 		}
 	}
