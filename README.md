@@ -3,13 +3,18 @@
 **Tree Style Tab (TST) のための、便利なタブ管理コンソール。Firefoxブラウザ用拡張機能です。**
 タブのツリー構造を、多彩な形式でエクスポートし、強力なライブビューアで閲覧・操作できます。
 また、バージョン2.1.0以降では、JSONファイルを使用しタブを完全復元することができます。
+新機能（バージョン2.2.0）では、ビューア画面に「ソート編集モード」を追加しました。同一階層内のタブをタイトル昇順でソートすることができます。
 
 **An Convenient tab management console for Tree Style Tab (TST). For Firefox web browser.**
 Export your tab tree in various formats, and browse/operate it with a powerful live viewer.
 Also, from version 2.1.0 onwards, you can fully restore tabs using a JSON file.
+A new feature (version 2.2.0) has been added to the viewer screen: "Sort Edit Mode." Tabs within the same hierarchy can be sorted in ascending order by title.
 
-### ＝＝＝ ビューア画面 ＝＝＝
-<img width="500" height="700" alt="image" src="https://github.com/user-attachments/assets/1e6e2fb1-3b84-4576-b9e9-dc4757dc9e33" />
+### ＝＝＝ ビューア画面（参照モード） ＝＝＝
+<img width="1853" height="1199" alt="image" src="https://github.com/user-attachments/assets/8e3d5f38-6d70-4456-802e-19170e33dfb3" />
+
+### ＝＝＝ ビューア画面（ソート編集モード） ＝＝＝
+<img width="2223" height="1188" alt="image" src="https://github.com/user-attachments/assets/c9e2a879-8717-4fa5-a761-9a8d3e3809e5" />
 
 ### ＝＝＝ 出力イメージ ＝＝＝
 <img width="500" height="700" alt="image" src="https://github.com/user-attachments/assets/6a096036-dbc3-42ab-9baa-8d229e81ec61" />
@@ -47,6 +52,7 @@ Also, from version 2.1.0 onwards, you can fully restore tabs using a JSON file.
     -   ビューアから直接、目的のタブに**ジャンプ**できます。
     -   ビューア上でタブを**削除**でき、TST本体の表示も即座に更新されます。
     -   各タブの**ファビコン**も完璧に再現します。
+    -   従来の「参照モード」に加え「ソート編集モード」を追加しました。同一階層内のタブをタイトル昇順でソートすることができます。画面上部のラジオボタンで切り替えできます。
 -   **多言語対応 (Localization)**
     -   日本語と英語のUIに完全対応しています。
 
@@ -65,6 +71,9 @@ Also, from version 2.1.0 onwards, you can fully restore tabs using a JSON file.
 -   **タブを削除**: タブのタイトルを**右クリック**し、「このタブを削除」を選択すると、そのタブを閉じることができます。
 -   **JSONから復元**: 復元したいJSONファイルを選択すると、操作しているウィンドウ上で復元処理が開始されます。<br>
     （参考値：動作環境により異なりますが、作者の環境では約1500タブを3分50秒で復元完了しています）
+-   **モード切替ラジオボタン**：
+    - 「参照モード」：従来の機能です。一覧参照できます。右クリックするとメニューが表示され、「このタブを削除」ボタンをクリックしタブ削除できます。
+    - 「ソート編集モード」：新機能（バージョン2.2.0）です。右クリックするとメニューが表示され、「この階層をタイトル昇順でソート」ボタンをクリックし、タブをソートできます。従来からの「このタブを削除」ボタンも設置していますので、不要なタブはここから削除できます。
 
 ## インストール (Installation)
 
