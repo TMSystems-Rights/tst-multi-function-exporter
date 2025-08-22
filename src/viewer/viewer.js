@@ -16,14 +16,12 @@ const TmViewer = {
 		progressRatePrefix: null
 	},
 
-	// ★★★ [追加] ここから ★★★
 	// ===================================================
 	// グローバルな状態管理
 	// ===================================================
 	State: {
 		currentMode: 'browse', // 'browse' or 'sort'
 	},
-	// ★★★ [追加] ここまで ★★★
 
 	// ===================================================
 	// DOM要素の参照
@@ -39,7 +37,7 @@ const TmViewer = {
 		progressContainer: null,
 		loadingText: null,
 		loadingContent: null,
-		modeSelector: null, // ★★★ [追加] ★★★
+		modeSelector: null,
 
 		/**
 		 * DOM要素の参照を初期化する
@@ -55,7 +53,7 @@ const TmViewer = {
 			this.progressContainer = document.getElementById('progress-container');
 			this.loadingText       = document.getElementById('loading-text');
 			this.loadingContent    = document.querySelector('.loading-content');
-			this.modeSelector      = document.getElementById('mode-selector'); // ★★★ [追加] ★★★
+			this.modeSelector      = document.getElementById('mode-selector');
 
 			// 進捗率の接頭辞設定
 			TmViewer.Const.progressRatePrefix = TmCommon.Funcs.GetMsg('restoreProgressRatePrefix');
@@ -110,7 +108,6 @@ const TmViewer = {
 		},
 
 		/**
-		 * ★★★ [最終確定版] ユーザー様のアイデアに基づき、li要素を直接ハイライトする方式に全面刷新 ★★★
 		 * ツリーコンテナ内での右クリックでカスタムコンテキストメニューを表示します。
 		 * @param {MouseEvent} event - contextmenuイベント。
 		 */
@@ -143,7 +140,7 @@ const TmViewer = {
 
 				const parentUl = clickedLi.parentElement;
 				if (parentUl) {
-					// ★★★ [最重要修正] グループ内の各liにクラスを付与 ★★★
+					// グループ内の各liにクラスを付与
 					for (const childLi of parentUl.children) {
 						if (!childLi.classList.contains('pinned-tab')) {
 							childLi.classList.add('sort-target');
@@ -272,7 +269,7 @@ const TmViewer = {
 				if (hasChildren) {
 					classes.push('parent');
 				}
-				if (node.pinned) { // ★★★ [修正] node.pinnedプロパティをチェック ★★★
+				if (node.pinned) { // node.pinnedプロパティをチェック
 					classes.push('pinned-tab');
 				}
 				const classAttr = classes.length > 0 ? ` class="${classes.join(' ')}"` : '';
@@ -345,6 +342,30 @@ const TmViewer = {
 			return p.innerHTML;
 		},
 
+		/**
+		 * モードに応じてUIの全体的なスタイルを更新する
+		 * @param {'browse' | 'sort'} mode - 現在のモード。
+		 */
+		updateModeStyles: function (mode) {
+			const body = document.body;
+			if (mode === 'sort') {
+				body.classList.add('sort-mode-active');
+			} else {
+				body.classList.remove('sort-mode-active');
+			}
+
+			// ラベルの選択状態を更新
+			const labels = document.querySelectorAll('#mode-selector label');
+			labels.forEach(label => {
+				const input = label.querySelector('input[type="radio"]');
+				if (input && input.checked) {
+					label.classList.add('selected');
+				} else {
+					label.classList.remove('selected');
+				}
+			});
+		},
+
 		// コンテキストメニュー関連のヘルパーをまとめる
 		ContextMenu: {
 			/**
@@ -373,6 +394,11 @@ const TmViewer = {
 				menuItem.innerText = `${TmCommon.Funcs.GetMsg("contextMenuDelete") || 'このタブを削除'}\n${title}`;
 				menuItem.addEventListener('click', async () => {
 					try {
+						// 確認ダイアログ
+						if (!confirm(TmCommon.Funcs.GetMsg('confirmToDelte'))) {
+							return;
+						}
+
 						const openParentIds = TmViewer.UI.getOpenParentIds();
 						const scrollY       = window.scrollY;
 						const response      = await browser.runtime.sendMessage({ type: 'delete-tab', tabId: parseInt(tabId, 10) });
@@ -389,7 +415,6 @@ const TmViewer = {
 			},
 
 			/**
-			 * ★★★ [修正版] ルート階層のソートに対応 ★★★
 			 * 「この階層をソート」のメニュー項目を作成します。
 			 * @param {string} targetId - ソート対象の親タブのID、または 'root'。
 			 * @returns {HTMLDivElement} - 生成されたメニュー項目のDOM要素。
@@ -400,6 +425,11 @@ const TmViewer = {
 				menuItem.innerText = TmCommon.Funcs.GetMsg("contextMenuSort") || 'この階層をタイトル昇順でソート';
 
 				menuItem.addEventListener('click', async () => {
+					// 確認ダイアログ
+					if (!confirm(TmCommon.Funcs.GetMsg('confirmToSort'))) {
+						return;
+					}
+
 					let childListElement = null;
 					let parentTabIdForBg = null;
 
@@ -428,7 +458,7 @@ const TmViewer = {
 					for (const childLi of childListElement.children) {
 						if (childLi.tagName !== 'LI') continue;
 						const link = childLi.querySelector(':scope > .li-content a');
-						// ★★★ [修正] プレースホルダーと、実際のピン留めタブ(.pinned-tabクラス)の両方を除外 ★★★
+						// プレースホルダーと、実際のピン留めタブ(.pinned-tabクラス)の両方を除外
 						if (link && link.dataset.tabId && link.dataset.tabId !== 'pinned' && !childLi.classList.contains('pinned-tab')) {
 							childrenInfo.push({
 								id: parseInt(link.dataset.tabId, 10),
@@ -481,7 +511,6 @@ const TmViewer = {
 			},
 
 			/**
-			 * ★★★ [修正] liに付けたハイライトクラスを解除する ★★★
 			 * 表示されているカスタムコンテキストメニューを閉じます。
 			 */
 			close: function () {
@@ -511,6 +540,8 @@ const TmViewer = {
 			TmCommon.Funcs.SetDocumentLocale();
 			this.setupEventListeners();
 			TmViewer.UI.renderTree(true);
+			// 初期表示時のスタイルを適用
+			TmViewer.UI.updateModeStyles(TmViewer.State.currentMode);
 		},
 
 		/**
@@ -521,7 +552,7 @@ const TmViewer = {
 			const UI       = TmViewer.UI;
 			const Handlers = TmViewer.Handlers;
 
-			const State = TmViewer.State; // ★★★ [追加] ★★★
+			const State = TmViewer.State;
 
 			document.getElementById('refreshBtn').addEventListener('click', () => UI.renderTree(true));
 			document.getElementById('expandAll').addEventListener('click', UI.expandAll);
@@ -529,10 +560,11 @@ const TmViewer = {
 			document.getElementById('restoreBtn').addEventListener('click', () => E.fileInput.click());
 			E.fileInput.addEventListener('change', Handlers.handleFileSelect);
 
-			// ★★★ [新設] モード切替ラジオボタンのイベントリスナー ★★★
+			// モード切替時にスタイル更新関数を呼び出す
 			E.modeSelector.addEventListener('change', (event) => {
 				State.currentMode = event.target.value;
 				console.log(`モードが "${State.currentMode}" に変更されました。`);
+				UI.updateModeStyles(State.currentMode); // スタイル更新
 				// モードが切り替わったらメニューとハイライトを閉じる
 				UI.ContextMenu.close();
 			});

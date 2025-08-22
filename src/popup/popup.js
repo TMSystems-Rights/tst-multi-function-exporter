@@ -40,7 +40,7 @@ const TmPopup = {
 			const button    = buttonMap[type];
 			if (!button) return;
 
-			// ★★★ [修正] originalTextは、data-i18n属性から取得するのではなく、実行時のtextContentから取得する方が安全
+			// originalTextは、data-i18n属性から取得するのではなく、実行時のtextContentから取得する方が安全
 			const originalText = button.textContent;
 			button.textContent = GetMsg("statusRequesting");
 			button.disabled    = true;
@@ -73,7 +73,7 @@ const TmPopup = {
 		 */
 		run: function () {
 			TmPopup.Elements.init();
-			// ★★★ [修正] 独自のテキスト設定関数を廃止し、共通関数を呼び出す
+			// 独自のテキスト設定関数を廃止し、共通関数を呼び出す
 			TmCommon.Funcs.SetDocumentLocale();
 			this.setupEventListeners();
 		},

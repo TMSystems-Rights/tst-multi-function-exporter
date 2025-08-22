@@ -167,7 +167,6 @@ const TmBackground = {
 		},
 
 		/**
-		 * ★★★ [最終解決策] 不安定なmove-afterを廃止し、move-beforeを使った逆順処理に全面刷新 ★★★
 		 * データ取得を伴わないアクション（タブのフォーカス、削除、ソート）を処理します。
 		 * @param {object} message - viewer.jsからのメッセージオブジェクト。
 		 * @returns {Promise<object>} 処理結果。
@@ -468,8 +467,7 @@ const TmBackground = {
 	// ===================================================
 	Helpers: {
 		/**
-		 * ★★★ [新設] ソート処理でツリー構造を高速に参照するためのMapを作成する ★★★
-		 * TSTから取得したツリー配列を、IDをキーにしたMapに変換します。
+		 * TSTから取得したツリー配列を、IDをキーにしたMapに変換します。（ソート処理でツリー構造を高速に参照するためのMapを作成）
 		 * @param {Array<object>} nodes - TSTのツリー構造データ。
 		 * @returns {Map<number, object>} - タブIDをキー、タブオブジェクトを値とするMap。
 		 */
@@ -493,7 +491,7 @@ const TmBackground = {
 		},
 
 		/**
-		 * ★★★ [新設] 指定されたタブのツリーにおける最後の末裔（子孫）のIDを見つける ★★★
+		 * 指定されたタブのツリーにおける最後の末裔（子孫）のIDを見つける
 		 * @param {number} tabId - 調査対象のタブID。
 		 * @param {Map<number, object>} tabMap - buildTabMapで作成したMap。
 		 * @returns {number|null} - 最後の末裔のタブID。子がいなければ自身のIDを返す。
@@ -801,7 +799,7 @@ browser.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
 		case 'focus-tst-tab':
 		case 'delete-tab':
 			return TmBackground.Handlers.handleActionRequest(message);
-		case 'sort-tabs': // ★★★ [追加] ★★★
+		case 'sort-tabs':
 			return TmBackground.Handlers.handleActionRequest(message);
 		case 'restore-tabs': {
 			const restoreData = message.data;

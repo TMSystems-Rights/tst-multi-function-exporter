@@ -125,19 +125,21 @@
 		"message": "進捗率"
 	},
 	"viewerModeBrowse": {
-		"message": "参照モード",
-		"description": "Label for the browse mode radio button in the viewer."
+		"message": "参照モード"
 	},
 	"viewerModeSort": {
-		"message": "ソート編集モード",
-		"description": "Label for the sort edit mode radio button in the viewer."
+		"message": "ソート編集モード"
 	},
 	"contextMenuSort": {
-		"message": "この階層をタイトル昇順でソート",
-		"description": "Context menu item to sort the children of a tab."
+		"message": "この階層をタイトル昇順でソート"
 	},
 	"viewerSorting": {
-		"message": "タブをソート中...",
-		"description": "Loading message displayed while tabs are being sorted."
+		"message": "タブをソート中..."
+	},
+	"confirmToDelte": {
+		"message": "選択したタブを削除しますがよろしいですか？"
+	},
+	"confirmToSort": {
+		"message": "選択した階層をソートしますがよろしいですか？"
 	}
 }
