@@ -6,7 +6,24 @@ body {
 	background-color: #333;
 	color: #ddd;
 	margin: 0;
-	padding: 20px;
+	padding: 110px 20px 20px 20px;
+}
+
+/* ========================
+ * ヘッダーセクション
+ * ======================== */
+header {
+	position: fixed;
+	background-color: #222121;
+	top: 0;
+	left: 0;
+	width: 100%;
+	z-index: 100;
+	margin: -20px 0 0 0;
+	padding: 10px 25px;
+	display: block;
+	box-shadow: 0 4px 6px #262626;
+	box-sizing: border-box;
 }
 
 h1 {
@@ -52,6 +69,14 @@ button {
 
 button:hover {
 	background-color: #e0e0e0;
+}
+
+/* ========================
+ * ツリーセクション
+ * ======================== */
+#tree-container {
+	position: relative;
+	top: 160px;
 }
 
 /* ========================
@@ -367,6 +392,11 @@ body.sort-mode-active li.sort-target {
 
 
 /* --- ソート編集モード時の全体スタイル --- */
+header.sort-mode-active {
+	background-color: #08243f;
+	box-shadow: 0 4px 6px #0c355d;
+}
+
 body.sort-mode-active {
 	background-color: #334;
 }

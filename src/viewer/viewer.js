@@ -38,6 +38,7 @@ const TmViewer = {
 		loadingText: null,
 		loadingContent: null,
 		modeSelector: null,
+		header: null,
 
 		/**
 		 * DOM要素の参照を初期化する
@@ -54,6 +55,7 @@ const TmViewer = {
 			this.loadingText       = document.getElementById('loading-text');
 			this.loadingContent    = document.querySelector('.loading-content');
 			this.modeSelector      = document.getElementById('mode-selector');
+			this.header            = document.getElementById('viewer-header');
 
 			// 進捗率の接頭辞設定
 			TmViewer.Const.progressRatePrefix = TmCommon.Funcs.GetMsg('restoreProgressRatePrefix');
@@ -135,8 +137,7 @@ const TmViewer = {
 				}
 			} else if (mode === 'sort') {
 				// 3. ソート対象グループを特定する
-				let sortMenuItemId      = null;
-				let parentForDeleteMenu = null; // 削除メニュー用の親を特定
+				let sortMenuItemId = null;
 
 				const parentUl = clickedLi.parentElement;
 				if (parentUl) {
@@ -152,8 +153,7 @@ const TmViewer = {
 						sortMenuItemId = 'root';
 					} else {
 						// 子階層
-						parentForDeleteMenu = parentUl.parentElement; // 親のli
-						sortMenuItemId      = parentForDeleteMenu.dataset.liId;
+						sortMenuItemId = parentUl.parentElement.dataset.liId; // 親のliのID
 					}
 				}
 
@@ -164,10 +164,8 @@ const TmViewer = {
 
 				if (tabId !== 'pinned') {
 					// 削除メニューは、クリックされたタブ自身を対象に追加
-					const deleteTargetTitle = parentForDeleteMenu ? parentForDeleteMenu.querySelector('a')?.textContent : tabText;
-					const deleteTargetId    = parentForDeleteMenu ? parentForDeleteMenu.dataset.liId : tabId;
-					if (deleteTargetTitle && deleteTargetId) {
-						menu.appendChild(TmViewer.UI.ContextMenu.createDeleteMenuItem(deleteTargetTitle, deleteTargetId));
+					if (tabId !== 'pinned') {
+						menu.appendChild(TmViewer.UI.ContextMenu.createDeleteMenuItem(tabText, tabId));
 					}
 				}
 			}
@@ -347,11 +345,14 @@ const TmViewer = {
 		 * @param {'browse' | 'sort'} mode - 現在のモード。
 		 */
 		updateModeStyles: function (mode) {
-			const body = document.body;
+			const body   = document.body;
+			const header = TmViewer.Elements.header;
 			if (mode === 'sort') {
 				body.classList.add('sort-mode-active');
+				header.classList.add('sort-mode-active');
 			} else {
 				body.classList.remove('sort-mode-active');
+				header.classList.remove('sort-mode-active');
 			}
 
 			// ラベルの選択状態を更新
