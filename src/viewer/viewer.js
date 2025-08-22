@@ -367,6 +367,25 @@ const TmViewer = {
 			});
 		},
 
+		/**
+		 * ★★★ [新設] 接続が切れた場合にUIを無効化し、リロードを促す ★★★
+		 */
+		showConnectionError: function () {
+			const E                   = TmViewer.Elements;
+			const message             = TmCommon.Funcs.GetMsg("errorConnectionLost");
+			E.loadingText.textContent = message;
+			// ボタン類を全て無効化
+			E.controlButtons.forEach(btn => btn.disabled = true);
+			document.querySelector('#mode-selector').disabled = true;
+
+			// マスクとメッセージだけ表示
+			E.loadingMask.classList.add('is-active');
+			E.loadingContent.style.display    = 'block';
+			E.progressContainer.style.display = 'none';
+			E.spinner.style.display           = 'none'; // スピナーは非表示
+		},
+
+
 		// コンテキストメニュー関連のヘルパーをまとめる
 		ContextMenu: {
 			/**
@@ -542,7 +561,7 @@ const TmViewer = {
 					existingMenu.remove();
 				}
 			}
-		}
+		},
 	},
 
 
@@ -560,6 +579,18 @@ const TmViewer = {
 			TmViewer.UI.renderTree(true);
 			// 初期表示時のスタイルを適用
 			TmViewer.UI.updateModeStyles(TmViewer.State.currentMode);
+
+			// ★★★ [追加] 5秒ごとにbackgroundとの接続を確認するハートビートを開始 ★★★
+			setInterval(async () => {
+				try {
+					await browser.runtime.sendMessage({ type: 'ping' });
+				} catch (error) {
+					console.error('バックグラウンドとの接続が切れました。', error.message);
+					TmViewer.UI.showConnectionError();
+					// 一度エラーになったら、以降のpingを止める
+					// (実際にはこのsetInterval自体は止まらないが、UIが無効化されるので問題ない)
+				}
+			}, 5000); // 5秒ごと
 		},
 
 		/**

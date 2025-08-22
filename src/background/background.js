@@ -851,6 +851,8 @@ browser.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
 		//  ポーリングは不要になったのでget-restore-progressは削除しても良いが、念のため残す
 		case 'get-restore-progress':
 			return Promise.resolve(TmBackground.State.restoreState);
+		case 'ping': // ★★★ [追加] ★★★
+			return Promise.resolve({ success: true, message: 'pong' });
 		default:
 			console.error('不明なメッセージタイプを受信:', message.type);
 			return Promise.resolve({ success: false, error: 'Unknown message type' });
