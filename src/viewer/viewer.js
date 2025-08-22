@@ -396,6 +396,7 @@ const TmViewer = {
 					try {
 						// 確認ダイアログ
 						if (!confirm(TmCommon.Funcs.GetMsg('confirmToDelte'))) {
+							this.close(); // キャンセル時はメニューを閉じる
 							return;
 						}
 
@@ -427,11 +428,13 @@ const TmViewer = {
 				menuItem.addEventListener('click', async () => {
 					// 確認ダイアログ
 					if (!confirm(TmCommon.Funcs.GetMsg('confirmToSort'))) {
+						this.close(); // キャンセル時はメニューを閉じる
 						return;
 					}
 
 					let childListElement = null;
 					let parentTabIdForBg = null;
+					const ancestorIds    = []; // [追加] 祖先タブのIDを格納する配列
 
 					if (targetId === 'root') {
 						// ルート階層のソート
@@ -446,6 +449,19 @@ const TmViewer = {
 						}
 						childListElement = parentLi.querySelector(':scope > ul');
 						parentTabIdForBg = parseInt(targetId, 10);
+
+						// 祖先をルートまで遡ってIDを収集する
+						let current = parentLi;
+						while (current && current.parentElement?.parentElement.id !== 'tree-container') {
+							const ancestorLi = current.parentElement.parentElement;
+							if (ancestorLi && ancestorLi.tagName === 'LI') {
+								ancestorIds.unshift(parseInt(ancestorLi.dataset.liId, 10));
+								current = ancestorLi;
+							} else {
+								break;
+							}
+						}
+						ancestorIds.push(parentTabIdForBg); // 自分自身も展開対象に含める
 					}
 
 					if (!childListElement) {
@@ -487,7 +503,8 @@ const TmViewer = {
 						const response = await browser.runtime.sendMessage({
 							type: 'sort-tabs',
 							parentTabId: parentTabIdForBg, // ルートの場合は null
-							sortedTabIds: sortedTabIds
+							sortedTabIds: sortedTabIds,
+							ancestorIds: ancestorIds // 祖先IDリストを渡す
 						});
 						if (response && response.success) {
 							// ソート成功後、TST側での処理反映を待ってから再描画

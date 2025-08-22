@@ -167,6 +167,7 @@ const TmBackground = {
 		},
 
 		/**
+		 * ソート前に必要なツリーを展開する処理
 		 * データ取得を伴わないアクション（タブのフォーカス、削除、ソート）を処理します。
 		 * @param {object} message - viewer.jsからのメッセージオブジェクト。
 		 * @returns {Promise<object>} 処理結果。
@@ -178,18 +179,35 @@ const TmBackground = {
 				} else if (message.type === 'delete-tab') {
 					await browser.tabs.remove(message.tabId);
 				} else if (message.type === 'sort-tabs') {
-					const { parentTabId, sortedTabIds } = message;
+					const { parentTabId, sortedTabIds, ancestorIds } = message;
 					console.log(`ソート開始: parent=${parentTabId || 'root'}, ids=`, sortedTabIds);
 
 					if (!sortedTabIds || sortedTabIds.length <= 1) {
 						return { success: true };
 					}
 
+					// ソート処理の前に、必要なツリーをすべて展開する
+					if (ancestorIds && ancestorIds.length > 0) {
+						console.log('ツリーを展開します:', ancestorIds);
+						for (const id of ancestorIds) {
+							try {
+								await browser.runtime.sendMessage(TmBackground.Const.TST_ID, {
+									type: 'expand-tree',
+									tab: id
+								});
+								await TmBackground.Helpers.sleep(200); // 展開処理のための待機
+							} catch (e) {
+								console.warn(`タブID ${id} の展開に失敗しました:`, e.message);
+							}
+						}
+						console.log('ツリーの展開が完了しました。ソート処理を開始します。');
+						await TmBackground.Helpers.sleep(500); // 全体的な安定化のための追加待機
+					}
+
 					// 配列の末尾から先頭に向かって処理する (逆順処理)
-					// i は末尾から2番目の要素のインデックスから開始
 					for (let i = sortedTabIds.length - 2; i >= 0; i--) {
 						const tabToMove      = sortedTabIds[i];
-						const referenceTabId = sortedTabIds[i + 1]; // 基準となるのは、常に自分の「次」に来るべきタブ
+						const referenceTabId = sortedTabIds[i + 1];
 
 						try {
 							console.log(`[move-before] タブID ${tabToMove} を タブID ${referenceTabId} の直前へ移動`);
