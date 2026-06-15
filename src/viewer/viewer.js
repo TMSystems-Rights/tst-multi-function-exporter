@@ -577,6 +577,13 @@ const TmViewer = {
 			TmViewer.Elements.init();
 			TmCommon.Funcs.SetDocumentLocale();
 			this.setupEventListeners();
+
+			// ブラウザが復元したラジオの選択状態を内部状態に同期する
+			const checkedRadio = document.querySelector('input[name="view-mode"]:checked');
+			if (checkedRadio) {
+				TmViewer.State.currentMode = checkedRadio.value;
+			}
+
 			TmViewer.UI.renderTree(true);
 			// 初期表示時のスタイルを適用
 			TmViewer.UI.updateModeStyles(TmViewer.State.currentMode);

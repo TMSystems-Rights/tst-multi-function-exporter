@@ -8,3 +8,6 @@ Thumbs.db
 # Node.js / npm
 # package.json と package-lock.json があれば、誰でも npm install コマンドで同じ環境を復元できるため、Gitで管理する必要がない。
 node_modules/
+
+# ビルド成果物（AMO 申請用 zip の出力先）
+dist/
