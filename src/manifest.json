@@ -8,7 +8,10 @@
 	"default_locale": "ja",
 	"browser_specific_settings": {
 		"gecko": {
-			"id": "{3414d66d-8a1a-4201-87c7-4741ee9a0556}"
+			"id": "{3414d66d-8a1a-4201-87c7-4741ee9a0556}",
+			"data_collection_permissions": {
+				"required": ["none"]
+			}
 		}
 	},
 	"permissions": [

@@ -22,5 +22,6 @@ npm run build:zip   # → dist/tst-multi-function-exporter-<version>.zip
 
 ## 作業時の注意
 
+- `browser_specific_settings.gecko.data_collection_permissions` は Firefox 拡張で必須（将来）。本拡張は `{"required": ["none"]}` を指定（PRIVACY.md と整合）
 - `viewer.js` の `innerHTML` 使用はツリー描画用。表示データはエスケープ処理済み。AMO ソースチェックで警告が出る場合は審査担当者向けに説明する
 - UI 変更を加えたら `History.md` の整合性も確認すること
