@@ -13,7 +13,12 @@ const TmViewer = {
 	// 定数
 	// ===================================================
 	Const: {
-		progressRatePrefix: null
+		progressRatePrefix: null,
+		treePollIntervalMs: 1500,
+		treePollMaxWaitMs: 60000,
+		modeSyncIntervalMs: 250,
+		modeSyncMaxTicks: 40,
+		modeStorageKey: 'tmViewerMode',
 	},
 
 	// ===================================================
@@ -21,6 +26,7 @@ const TmViewer = {
 	// ===================================================
 	State: {
 		currentMode: 'browse', // 'browse' or 'sort'
+		modeSyncTimerId: null,
 	},
 
 	// ===================================================
@@ -211,27 +217,89 @@ const TmViewer = {
 		},
 
 		/**
+		 * 選択モードを localStorage に保存する（ブラウザ再起動後も復元するため）
+		 * @param {'browse' | 'sort'} mode
+		 */
+		saveModePreference: function (mode) {
+			try {
+				localStorage.setItem(TmViewer.Const.modeStorageKey, mode);
+			} catch (e) {
+				console.warn('モード設定の保存に失敗しました:', e);
+			}
+		},
+
+		/**
+		 * localStorage からモードを復元し、ラジオと State に反映する
+		 * @returns {'browse' | 'sort'} 復元後のモード
+		 */
+		restoreModePreference: function () {
+			try {
+				const saved = localStorage.getItem(TmViewer.Const.modeStorageKey);
+				if (saved === 'browse' || saved === 'sort') {
+					const radio = document.querySelector(`input[name="view-mode"][value="${saved}"]`);
+					if (radio) {
+						radio.checked = true;
+					}
+				}
+			} catch (e) {
+				console.warn('モード設定の復元に失敗しました:', e);
+			}
+			return this.syncModeFromRadio();
+		},
+
+		/**
+		 * ブラウザが復元したラジオの選択状態を内部状態に同期する
+		 * @returns {'browse' | 'sort'} 同期後のモード
+		 */
+		syncModeFromRadio: function () {
+			const checkedRadio = document.querySelector('input[name="view-mode"]:checked');
+			if (checkedRadio) {
+				TmViewer.State.currentMode = checkedRadio.value;
+			}
+			return TmViewer.State.currentMode;
+		},
+
+		/**
+		 * TST のツリー構築完了を待ちながらビューア用ツリーデータを取得する
+		 * @returns {Promise<Array<object>>}
+		 */
+		fetchViewerTreeWithRetry: async function () {
+			const deadline = Date.now() + TmViewer.Const.treePollMaxWaitMs;
+
+			while (Date.now() < deadline) {
+				const response = await browser.runtime.sendMessage({ type: 'get-viewer-data' });
+
+				if (response?.ready && Array.isArray(response.tree)) {
+					const hasUnresolvedTitles = response.tree.some(
+						node => !node.title || node.title === node.url
+					);
+					if (!hasUnresolvedTitles) {
+						return response.tree;
+					}
+					console.log('未解決のタイトルを検出しました。再取得を試みます...');
+				} else {
+					console.log('ツリーデータを取得できませんでした。再取得を試みます...', response);
+				}
+
+				await new Promise(resolve => setTimeout(resolve, TmViewer.Const.treePollIntervalMs));
+			}
+
+			throw new Error(TmCommon.Funcs.GetMsg('errorViewerTreeTimeout'));
+		},
+
+		/**
 		 * ツリーを再描画するメイン関数。
 		 * @param {boolean} [expandAfterRender=false] - 描画後にツリーを全展開するか。
 		 * @param {{openIds: Set<string>, scrollY: number}|null} [stateToRestore=null] - 復元するUIの状態。
-		 * @param {boolean} [isRetry=false] - この呼び出しが再試行か。
 		 */
-		renderTree: async function (expandAfterRender = false, stateToRestore = null, isRetry = false) {
-			if (!isRetry) {
-				this.setLoadingState(true, 'loading');
-			}
+		renderTree: async function (expandAfterRender = false, stateToRestore = null) {
+			this.setLoadingState(true, 'loading');
 			const openParentIds = stateToRestore ? stateToRestore.openIds : this.getOpenParentIds();
 			const scrollY       = stateToRestore ? stateToRestore.scrollY : window.scrollY;
 			const E             = TmViewer.Elements;
 			try {
-				const treeData            = await browser.runtime.sendMessage({ type: 'get-viewer-data' });
-				const hasUnresolvedTitles = treeData.some(node => !node.title || node.title === node.url);
-				if (hasUnresolvedTitles && !isRetry) {
-					console.log('未解決のタイトルを検出しました。1.5秒後に再取得を試みます...');
-					const currentState = { openIds: openParentIds, scrollY: scrollY };
-					setTimeout(() => this.renderTree(expandAfterRender, currentState, true), 1500);
-					return;
-				}
+				const treeData = await this.fetchViewerTreeWithRetry();
+
 				if (treeData && treeData.length > 0) {
 					E.treeContainer.innerHTML = this.buildHtmlList(treeData);
 					document.title            = `${TmCommon.Funcs.GetMsg("viewerTitle")} - ${new Date().toLocaleString()}`;
@@ -244,11 +312,16 @@ const TmViewer = {
 				} else {
 					E.treeContainer.innerHTML = `<p>${TmCommon.Funcs.GetMsg("errorNoTabToDisp")}</p>`;
 				}
+				// ポーリング完了後にラジオ復元が終わっている場合があるため、表示直前に再同期する
+				this.deferModeSyncUntilStable();
 				this.setLoadingState(false);
 			} catch (error) {
 				console.error('renderTreeでエラー:', error);
-				const errorMessage        = TmCommon.Funcs.GetMsg("errorGeneric", error.message);
+				const errorMessage        = error.message === TmCommon.Funcs.GetMsg('errorViewerTreeTimeout')
+					? error.message
+					: TmCommon.Funcs.GetMsg("errorGeneric", error.message);
 				E.treeContainer.innerHTML = `<p>${errorMessage}</p>`;
+				this.deferModeSyncUntilStable();
 				this.setLoadingState(false);
 			}
 		},
@@ -341,10 +414,10 @@ const TmViewer = {
 		},
 
 		/**
-		 * モードに応じてUIの全体的なスタイルを更新する
-		 * @param {'browse' | 'sort'} mode - 現在のモード。
+		 * モードに応じてUIの全体的なスタイルを更新する（ラジオの checked を唯一の真実源とする）
 		 */
-		updateModeStyles: function (mode) {
+		updateModeStyles: function () {
+			const mode   = this.syncModeFromRadio();
 			const body   = document.body;
 			const header = TmViewer.Elements.header;
 			if (mode === 'sort') {
@@ -355,7 +428,6 @@ const TmViewer = {
 				header.classList.remove('sort-mode-active');
 			}
 
-			// ラベルの選択状態を更新
 			const labels = document.querySelectorAll('#mode-selector label');
 			labels.forEach(label => {
 				const input = label.querySelector('input[type="radio"]');
@@ -365,6 +437,35 @@ const TmViewer = {
 					label.classList.remove('selected');
 				}
 			});
+		},
+
+		/**
+		 * フォーム復元が遅延するケース向けに、ラジオ状態の安定までモード同期を繰り返す
+		 */
+		deferModeSyncUntilStable: function () {
+			if (TmViewer.State.modeSyncTimerId) {
+				clearInterval(TmViewer.State.modeSyncTimerId);
+			}
+
+			let ticks    = 0;
+			let lastMode = null;
+			const apply  = () => {
+				const mode = this.restoreModePreference();
+				if (mode !== lastMode) {
+					lastMode = mode;
+					this.updateModeStyles();
+					console.log(`[mode-sync] モードを "${mode}" に同期しました。`);
+				}
+			};
+
+			apply();
+			TmViewer.State.modeSyncTimerId = setInterval(() => {
+				apply();
+				if (++ticks >= TmViewer.Const.modeSyncMaxTicks) {
+					clearInterval(TmViewer.State.modeSyncTimerId);
+					TmViewer.State.modeSyncTimerId = null;
+				}
+			}, TmViewer.Const.modeSyncIntervalMs);
 		},
 
 		/**
@@ -579,14 +680,11 @@ const TmViewer = {
 			this.setupEventListeners();
 
 			// ブラウザが復元したラジオの選択状態を内部状態に同期する
-			const checkedRadio = document.querySelector('input[name="view-mode"]:checked');
-			if (checkedRadio) {
-				TmViewer.State.currentMode = checkedRadio.value;
-			}
+			TmViewer.UI.restoreModePreference();
 
 			TmViewer.UI.renderTree(true);
-			// 初期表示時のスタイルを適用
-			TmViewer.UI.updateModeStyles(TmViewer.State.currentMode);
+			// ローディング中のヘッダー色用（renderTree 完了後にも deferModeSyncUntilStable で再適用）
+			TmViewer.UI.updateModeStyles();
 
 			// 5秒ごとにbackgroundとの接続を確認するpingを開始
 			setInterval(async () => {
@@ -620,10 +718,14 @@ const TmViewer = {
 			// モード切替時にスタイル更新関数を呼び出す
 			E.modeSelector.addEventListener('change', (event) => {
 				State.currentMode = event.target.value;
+				UI.saveModePreference(event.target.value);
 				console.log(`モードが "${State.currentMode}" に変更されました。`);
-				UI.updateModeStyles(State.currentMode); // スタイル更新
-				// モードが切り替わったらメニューとハイライトを閉じる
+				UI.updateModeStyles();
 				UI.ContextMenu.close();
+			});
+
+			window.addEventListener('pageshow', () => {
+				UI.deferModeSyncUntilStable();
 			});
 
 			document.addEventListener('click', UI.ContextMenu.close);

@@ -77,6 +77,9 @@
 	"errorNoTabToDisp": {
 		"message": "There are no tabs to display."
 	},
+	"errorViewerTreeTimeout": {
+		"message": "Tree Style Tab is not responding, or the tab tree is still being built. Please wait a moment and reload this page with the F5 key."
+	},
 	"popupRestoreButton": {
 		"message": "Restore from JSON"
 	},

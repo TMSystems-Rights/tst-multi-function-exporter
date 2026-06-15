@@ -1,8 +1,8 @@
 """
 AMO 申請用 zip をビルドするスクリプト。
 
-  src/ 配下のみを zip 化し、dist/tst-multi-function-exporter-<version>.zip を出力する。
-  <version> は src/manifest.json の "version" を自動取得。
+  src/ 配下のみを zip 化し、dist/<package-name>-<version>.zip を出力する。
+  <package-name> は package.json の "name"、<version> は src/manifest.json の "version" を自動取得。
 
 使い方:
   python scripts/build-zip.py        # 直接
@@ -13,17 +13,29 @@ import sys
 import zipfile
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-SRC_DIR  = ROOT_DIR / "src"
-DIST_DIR = ROOT_DIR / "dist"
-MANIFEST = SRC_DIR / "manifest.json"
+ROOT_DIR     = Path(__file__).resolve().parent.parent
+SRC_DIR      = ROOT_DIR / "src"
+DIST_DIR     = ROOT_DIR / "dist"
+MANIFEST     = SRC_DIR / "manifest.json"
+PACKAGE_JSON = ROOT_DIR / "package.json"
 
 # zip に含めないファイル名（大文字小文字無視）
 EXCLUDE_NAMES = {".ds_store", "thumbs.db", ".gitkeep"}
 
 def main() -> int:
+    if not PACKAGE_JSON.is_file():
+        print(f"ERROR: package.json not found at {PACKAGE_JSON}", file=sys.stderr)
+        return 1
+
     if not MANIFEST.is_file():
         print(f"ERROR: manifest.json not found at {MANIFEST}", file=sys.stderr)
+        return 1
+
+    with PACKAGE_JSON.open("r", encoding="utf-8") as f:
+        package = json.load(f)
+    package_name = package.get("name")
+    if not package_name:
+        print(f"ERROR: failed to read 'name' from {PACKAGE_JSON}", file=sys.stderr)
         return 1
 
     with MANIFEST.open("r", encoding="utf-8") as f:
@@ -33,7 +45,7 @@ def main() -> int:
         print(f"ERROR: failed to read 'version' from {MANIFEST}", file=sys.stderr)
         return 1
 
-    zip_name = f"tst-multi-function-exporter-{version}.zip"
+    zip_name = f"{package_name}-{version}.zip"
     zip_path = DIST_DIR / zip_name
 
     DIST_DIR.mkdir(parents=True, exist_ok=True)

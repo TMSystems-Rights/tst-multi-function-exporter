@@ -100,17 +100,25 @@ const TmBackground = {
 		/**
 		 * データ取得を伴うリクエスト（エクスポート、ビューア表示）を処理します。
 		 * @param {object} message - popup.jsまたはviewer.jsからのメッセージオブジェクト。
+		 * @param {object} [sender] - メッセージの送信元情報。
 		 * @returns {Promise<object>} 処理結果。
 		 */
-		handleDataRequest: async function (message) {
+		handleDataRequest: async function (message, sender) {
 			try {
+				let windowId;
+				if (typeof sender?.tab?.windowId === 'number') {
+					windowId = sender.tab.windowId;
+				} else {
+					const currentWindow = await browser.windows.getCurrent();
+					windowId            = currentWindow.id;
+				}
+
 				// TSTからツリー構造を取得
-				const currentWindow = await browser.windows.getCurrent();
-				const tree          = await browser.runtime.sendMessage(
+				const tree = await browser.runtime.sendMessage(
 					TmBackground.Const.TST_ID,
 					{
 						type: 'get-tree',
-						window: currentWindow.id
+						window: windowId
 					}
 				);
 
@@ -122,6 +130,21 @@ const TmBackground = {
 				const viewerUrl    = browser.runtime.getURL('viewer/viewer.html');
 				const filteredTree = TmBackground.Helpers.filterTree(tree, (tab) => tab.url !== viewerUrl);
 				const outputData   = TmBackground.Helpers.convertTreeForJSON(filteredTree);
+
+				if (message.type === 'get-viewer-data') {
+					const windowTabs    = await browser.tabs.query({ windowId });
+					const expectedCount = windowTabs.filter((tab) => {
+						const url = tab.url || tab.pendingUrl || '';
+						return url !== viewerUrl;
+					}).length;
+					const treeTabCount = TmBackground.Helpers.countTreeTabs(filteredTree);
+
+					if (treeTabCount < expectedCount) {
+						console.log(`[get-viewer-data] TST tree not ready: ${treeTabCount}/${expectedCount} tabs`);
+						return { ready: false, error: `TST tree not ready (${treeTabCount}/${expectedCount})` };
+					}
+					return { ready: true, tree: outputData };
+				}
 
 				const currentDatetime = new Date().toLocaleString('ja-JP', {
 					timeZone: 'Asia/Tokyo',
@@ -155,13 +178,13 @@ const TmBackground = {
 						}
 						break;
 					}
-					case 'get-viewer-data': {
-						return outputData;
-					}
 				}
 				return { success: true };
 			} catch (err) {
 				console.error('データリクエスト処理でエラー:', err);
+				if (message.type === 'get-viewer-data') {
+					return { ready: false, error: err.message };
+				}
 				return { success: false, error: err.message };
 			}
 		},
@@ -567,6 +590,22 @@ const TmBackground = {
 		},
 
 		/**
+		 * TSTツリー内のタブノード数を再帰的に数える
+		 * @param {Array<object>} nodes - TSTツリーのノード配列
+		 * @returns {number}
+		 */
+		countTreeTabs: function (nodes) {
+			let count = 0;
+			for (const node of nodes) {
+				count++;
+				if (node.children && node.children.length > 0) {
+					count += this.countTreeTabs(node.children);
+				}
+			}
+			return count;
+		},
+
+		/**
 		 * ツリー構造を再帰的にフィルタリングする
 		 * @param {Array} nodes - タブのノード配列
 		 * @param {Function} predicate - trueを返したノードを維持する関数
@@ -834,10 +873,11 @@ browser.runtime.onMessage.addListener((message, sender, _sendResponse) => { // s
 	// Manifest V3の非永続的な環境で非同期処理を正しく扱うため、
 	// メッセージの種類に応じて、対応する非同期関数を呼び出し、その返り値(Promise)をreturnする。
 	switch (message.type) {
+		case 'get-viewer-data':
+			return TmBackground.Handlers.handleDataRequest(message, sender);
 		case 'export-json':
 		case 'export-tsv':
 		case 'open-viewer':
-		case 'get-viewer-data':
 			return TmBackground.Handlers.handleDataRequest(message);
 		case 'focus-tst-tab':
 		case 'delete-tab':

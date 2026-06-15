@@ -77,6 +77,9 @@
 	"errorNoTabToDisp": {
 		"message": "表示するタブがありません。"
 	},
+	"errorViewerTreeTimeout": {
+		"message": "Tree Style Tabが応答していないか、タブツリーの構築に時間がかかっています。しばらく待ってF5キーでリロードしてみてください。"
+	},
 	"popupRestoreButton": {
 		"message": "JSONから復元"
 	},

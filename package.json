@@ -1,6 +1,6 @@
 {
 	"name": "tst-multi-function-exporter",
-	"version": "2.2.4",
+	"version": "2.2.5",
 	"description": "Firefox拡張「TST 多機能エクスポーター」用ワークスペース",
 	"main": "index.js",
 	"scripts": {
