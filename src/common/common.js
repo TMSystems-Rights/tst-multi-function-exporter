@@ -41,7 +41,7 @@ const TmCommon = {
 				const key  = elem.getAttribute('data-i18n');
 				const text = getMsg(key);
 
-				// プレースホルダーとして機能させることも可能
+				// 同じdata-i18n指定を、入力欄・値を持つ部品・通常要素へ適切なプロパティで反映する。
 				if (elem.hasAttribute('data-i18n-placeholder')) {
 					elem.placeholder = text;
 				} else if (elem.hasAttribute('value')) {
@@ -59,11 +59,18 @@ const TmCommon = {
 			}
 		},
 
+		/**
+		 * 指定文字数を超える表示文字列を省略記号付きで切り詰める。
+		 * @param {string} str - 切り詰める文字列。
+		 * @param {number} maxLen - 省略記号を含む最大文字数。
+		 * @returns {string} 最大文字数以内に収めた文字列。
+		 */
 		CutStringByLength: function (str, maxLen) {
 			if (!str) {
 				return '';
 			}
 			if (str.length > maxLen) {
+				// 末尾の1文字分を省略記号へ割り当て、返却値をmaxLen文字以内に保つ。
 				return str.substring(0, maxLen - 1) + '…';
 			}
 			return str; // substringは不要。元の文字列がmaxLen以下ならそのまま返す

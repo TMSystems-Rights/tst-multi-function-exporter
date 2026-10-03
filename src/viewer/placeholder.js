@@ -10,6 +10,9 @@ const TmPlaceholder = {
 		urlLink: null,
 		copyBtn: null,
 
+		/**
+		 * プレースホルダ画面で使用するDOM要素の参照を初期化する。
+		 */
 		init: function () {
 			this.title   = document.getElementById('title');
 			this.urlLink = document.getElementById('url-link');
@@ -36,6 +39,7 @@ const TmPlaceholder = {
 			const E = TmPlaceholder.Elements;
 			const S = TmPlaceholder.State;
 
+			// 表示用に復元した元URLをコピーし、成功時だけ一時的な完了表示へ切り替える。
 			navigator.clipboard.writeText(S.originalUrl).then(() => {
 				const copiedMsg = TmCommon.Funcs.GetMsg('placeholderCopyButtonCopied');
 				const copyMsg   = TmCommon.Funcs.GetMsg('placeholderCopyButton');
@@ -84,6 +88,7 @@ const TmPlaceholder = {
 		getUrlParams: function () {
 			const S = TmPlaceholder.State;
 			try {
+				// background.jsがabout: URLと保存時タイトルを埋め込んだクエリを表示用Stateへ戻す。
 				const params    = new URLSearchParams(window.location.search);
 				S.originalUrl   = decodeURIComponent(params.get('url') || '');
 				S.originalTitle = decodeURIComponent(params.get('title') || 'タイトルなし');
@@ -102,7 +107,7 @@ const TmPlaceholder = {
 			const E = TmPlaceholder.Elements;
 			const S = TmPlaceholder.State;
 
-			// document.titleはSetDocumentLocaleが設定するので、ここでは動的タイトルのみ設定
+			// SetDocumentLocaleが設定した固定ページ名を残し、復元対象のタイトルだけを追記する。
 			document.title       += `: ${S.originalTitle}`; // 「復元情報: 元のタイトル」のようにする
 			E.title.textContent   = S.originalTitle;
 			E.urlLink.textContent = S.originalUrl;

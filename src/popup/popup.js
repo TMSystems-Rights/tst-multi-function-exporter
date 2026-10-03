@@ -31,6 +31,7 @@ const TmPopup = {
 		 * @param {'export-json' | 'export-tsv' | 'open-viewer'} type - 送信するメッセージのタイプ。
 		 */
 		sendMessageToBackground: async function (type) {
+			// メッセージ種別から操作元ボタンを引き、処理中表示と再操作防止を共通化する。
 			const GetMsg    = TmCommon.Funcs.GetMsg;
 			const buttonMap = {
 				'export-json': TmPopup.Elements.exportJsonBtn,
@@ -49,6 +50,7 @@ const TmPopup = {
 				const response = await browser.runtime.sendMessage({ type: type });
 				if (response && response.success) {
 					button.textContent = GetMsg("statusDone");
+					// 完了表示を利用者が確認できる短い時間を置いてからポップアップを閉じる。
 					setTimeout(() => window.close(), 500);
 				} else {
 					// 成功応答だが、エラー内容が返ってきた場合
@@ -58,6 +60,7 @@ const TmPopup = {
 				console.error(`[${type}] の実行に失敗:`, error);
 				const errorMessage = (error && error.message) ? error.message : GetMsg("errorUnknown");
 				alert(GetMsg("errorGeneric", errorMessage));
+				// 失敗時はポップアップを閉じず、修正後に同じ操作を再試行できる状態へ戻す。
 				button.textContent = originalText;
 				button.disabled    = false;
 			}

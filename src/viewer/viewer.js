@@ -80,7 +80,7 @@ const TmViewer = {
 			const file = event.target.files[0];
 			if (!file) return;
 
-			// UIを「復元モード」に切り替え
+			// ファイル読込と復元開始の二重操作を防ぐため、バックグラウンドへ渡す前にUIをロックする。
 			TmViewer.UI.setLoadingState(true, 'restoring', 'viewerRestoring');
 			try {
 				const fileContent   = await file.text();
@@ -92,6 +92,7 @@ const TmViewer = {
 				alert(TmCommon.Funcs.GetMsg("errorGeneric", error.message));
 				TmViewer.UI.setLoadingState(false);
 			} finally {
+				// 同じファイルを続けて選択してもchangeイベントが再発火するよう、選択値を消しておく。
 				event.target.value = '';
 			}
 		},
@@ -101,6 +102,7 @@ const TmViewer = {
 		 * @param {MouseEvent} event - クリックイベント。
 		 */
 		handleTreeClick: function (event) {
+			// リンクのクリックは実ページへの遷移ではなく、対応するFirefoxタブの選択として扱う。
 			if (event.target.tagName === 'A') {
 				event.preventDefault();
 				const tabId = event.target.dataset.tabId;
@@ -108,6 +110,7 @@ const TmViewer = {
 					browser.runtime.sendMessage({ type: 'focus-tst-tab', tabId: parseInt(tabId, 10) });
 				}
 			} else {
+				// リンク以外の行領域は、子を持つノードの展開・折りたたみに使用する。
 				const targetLi = event.target.closest('li');
 				if (targetLi && targetLi.classList.contains('parent')) {
 					targetLi.classList.toggle('open');
@@ -138,6 +141,7 @@ const TmViewer = {
 			const menu = TmViewer.UI.ContextMenu.create(event.clientX, event.clientY);
 
 			if (mode === 'browse') {
+				// ピン留めタブは誤操作時の影響が大きいため、ビューアからの削除対象にしない。
 				if (tabId !== 'pinned') {
 					menu.appendChild(TmViewer.UI.ContextMenu.createDeleteMenuItem(tabText, tabId));
 				}
@@ -147,7 +151,7 @@ const TmViewer = {
 
 				const parentUl = clickedLi.parentElement;
 				if (parentUl) {
-					// グループ内の各liにクラスを付与
+					// ソートされる範囲を事前に見せるため、同じ親を持つ兄弟だけをハイライトする。
 					for (const childLi of parentUl.children) {
 						if (!childLi.classList.contains('pinned-tab')) {
 							childLi.classList.add('sort-target');
@@ -195,6 +199,7 @@ const TmViewer = {
 		setLoadingState: function (isLoading, mode = 'loading', messageKey = "viewerLoading") {
 			const E = TmViewer.Elements;
 			if (isLoading) {
+				// 非同期処理中の再実行を防ぎ、通常読込と進捗表示のどちらか一方だけを表示する。
 				E.controlButtons.forEach(btn => btn.disabled = true);
 				E.loadingMask.classList.add('is-active');
 
@@ -235,6 +240,7 @@ const TmViewer = {
 		restoreModePreference: function () {
 			try {
 				const saved = localStorage.getItem(TmViewer.Const.modeStorageKey);
+				// 想定外の保存値は採用せず、HTML側で選択されている既定モードを維持する。
 				if (saved === 'browse' || saved === 'sort') {
 					const radio = document.querySelector(`input[name="view-mode"][value="${saved}"]`);
 					if (radio) {
@@ -267,12 +273,15 @@ const TmViewer = {
 			const deadline = Date.now() + TmViewer.Const.treePollMaxWaitMs;
 			let lastDetail = '';
 
+			// TSTは起動直後や大量タブ復元直後にツリーを段階的に構築するため、
+			// background.jsがreadyを返すまで上限時間内で再取得する。
 			while (Date.now() < deadline) {
 				const response = await browser.runtime.sendMessage({ type: 'get-viewer-data' });
 
 				if (response?.ready && Array.isArray(response.tree)) {
 					return response.tree;
 				} else {
+					// 利用者が「件数待ち」と「タイトル待ち」を区別できる表示へ変換する。
 					if (response?.reason === 'tree-count-mismatch') {
 						lastDetail = TmCommon.Funcs.GetMsg('viewerTreeStatusCountMismatch', [
 							String(response.treeTabCount),
@@ -308,6 +317,7 @@ const TmViewer = {
 		 */
 		renderTree: async function (expandAfterRender = false, stateToRestore = null) {
 			this.setLoadingState(true, 'loading');
+			// 再描画でDOMを置き換える前に、開閉状態とスクロール位置を退避する。
 			const openParentIds = stateToRestore ? stateToRestore.openIds : this.getOpenParentIds();
 			const scrollY       = stateToRestore ? stateToRestore.scrollY : window.scrollY;
 			const E             = TmViewer.Elements;
@@ -315,6 +325,7 @@ const TmViewer = {
 				const treeData = await this.fetchViewerTreeWithRetry();
 
 				if (treeData && treeData.length > 0) {
+					// buildHtmlList内で表示値をエスケープしたHTMLだけを一括反映する。
 					E.treeContainer.innerHTML = this.buildHtmlList(treeData);
 					document.title            = `${TmCommon.Funcs.GetMsg("viewerTitle")} - ${new Date().toLocaleString()}`;
 					if (expandAfterRender) {
@@ -349,6 +360,7 @@ const TmViewer = {
 			if (!nodes || nodes.length === 0) return '';
 			let html = '<ul>';
 			for (const node of nodes) {
+				// 子の有無とピン留め状態をCSSクラスへ変換し、表示・操作の制御に共用する。
 				const hasChildren = node.children && node.children.length > 0;
 				const classes     = [];
 				if (hasChildren) {
@@ -361,6 +373,7 @@ const TmViewer = {
 				html           += `<li${classAttr} data-li-id="${node.id}">`;
 
 				let iconImg = '';
+				// URL・タイトル・faviconは外部ページ由来なので、HTMLへ埋め込む前に必ずエスケープする。
 				if (node.favIconUrl) {
 					iconImg = `<div class="favicon-wrapper"><img src="${this.escapeHtml(node.favIconUrl)}" class="favicon" alt=""></div>`;
 				} else {
@@ -422,6 +435,7 @@ const TmViewer = {
 		 */
 		escapeHtml: function (str) {
 			if (str === null || typeof str === 'undefined') return '';
+			// textContentへ代入してブラウザ自身に特殊文字をエスケープさせ、生成結果だけを取り出す。
 			const p       = document.createElement("p");
 			p.textContent = str;
 			return p.innerHTML;
@@ -431,6 +445,7 @@ const TmViewer = {
 		 * モードに応じてUIの全体的なスタイルを更新する（ラジオの checked を唯一の真実源とする）
 		 */
 		updateModeStyles: function () {
+			// pageshow時にブラウザがフォーム値を復元する場合があるため、Stateではなくラジオを正とする。
 			const mode   = this.syncModeFromRadio();
 			const body   = document.body;
 			const header = TmViewer.Elements.header;
@@ -458,6 +473,7 @@ const TmViewer = {
 		 */
 		deferModeSyncUntilStable: function () {
 			if (TmViewer.State.modeSyncTimerId) {
+				// 再描画やpageshowが連続しても同期タイマーを多重起動しない。
 				clearInterval(TmViewer.State.modeSyncTimerId);
 			}
 
@@ -475,6 +491,7 @@ const TmViewer = {
 			apply();
 			TmViewer.State.modeSyncTimerId = setInterval(() => {
 				apply();
+				// ブラウザのフォーム復元待ちを無期限に続けず、規定回数で監視を終了する。
 				if (++ticks >= TmViewer.Const.modeSyncMaxTicks) {
 					clearInterval(TmViewer.State.modeSyncTimerId);
 					TmViewer.State.modeSyncTimerId = null;
@@ -510,6 +527,7 @@ const TmViewer = {
 			 * @returns {HTMLDivElement} - 生成されたメニューのDOM要素。
 			 */
 			create: function (x, y) {
+				// contextmenuイベントのビューポート座標に合わせて、右クリック位置へ表示する。
 				const menu      = document.createElement('div');
 				menu.className  = 'custom-context-menu';
 				menu.style.left = `${x}px`;
@@ -535,6 +553,7 @@ const TmViewer = {
 							return;
 						}
 
+						// 削除後の再描画で利用者の閲覧位置が飛ばないよう、現在のUI状態を引き継ぐ。
 						const openParentIds = TmViewer.UI.getOpenParentIds();
 						const scrollY       = window.scrollY;
 						const response      = await browser.runtime.sendMessage({ type: 'delete-tab', tabId: parseInt(tabId, 10) });
@@ -585,7 +604,8 @@ const TmViewer = {
 						childListElement = parentLi.querySelector(':scope > ul');
 						parentTabIdForBg = parseInt(targetId, 10);
 
-						// 祖先をルートまで遡ってIDを収集する
+						// TSTでは折りたたまれた祖先配下の移動が正しく反映されない場合があるため、
+						// background.jsでルート側から展開できる順序に祖先IDを収集する。
 						let current = parentLi;
 						while (current && current.parentElement?.parentElement.id !== 'tree-container') {
 							const ancestorLi = current.parentElement.parentElement;
@@ -604,12 +624,13 @@ const TmViewer = {
 						return;
 					}
 
-					// 子要素のタブ情報を収集
+					// DOMの直下だけを収集し、子孫を別階層のソートへ巻き込まない。
 					const childrenInfo = [];
 					for (const childLi of childListElement.children) {
 						if (childLi.tagName !== 'LI') continue;
 						const link = childLi.querySelector(':scope > .li-content a');
-						// プレースホルダーと、実際のピン留めタブ(.pinned-tabクラス)の両方を除外
+						// ピン留めタブは通常タブと配置領域が異なるため、タイトルソートから除外する。
+						// 旧データの'pinned'疑似IDと現在のCSSクラスの両方を確認して互換性を保つ。
 						if (link && link.dataset.tabId && link.dataset.tabId !== 'pinned' && !childLi.classList.contains('pinned-tab')) {
 							childrenInfo.push({
 								id: parseInt(link.dataset.tabId, 10),
@@ -626,7 +647,7 @@ const TmViewer = {
 
 					console.log('ソート前の配列:', JSON.parse(JSON.stringify(childrenInfo)));
 
-					// タイトルでソート(数値も考慮した自然順ソート)
+					// 大文字小文字を区別せず、"Tab 2"を"Tab 10"より前にする自然順で並べる。
 					childrenInfo.sort((a, b) => a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' }));
 
 					const sortedTabIds = childrenInfo.map(info => info.id);
@@ -643,7 +664,7 @@ const TmViewer = {
 							ancestorIds: ancestorIds // 祖先IDリストを渡す
 						});
 						if (response && response.success) {
-							// ソート成功後、TST側での処理反映を待ってから再描画
+							// 応答直後はTSTのツリー更新が終わっていない場合があるため、少し待ってから再取得する。
 							setTimeout(() => {
 								const openParentIds = TmViewer.UI.getOpenParentIds();
 								const scrollY       = window.scrollY;
@@ -723,6 +744,7 @@ const TmViewer = {
 
 			const State = TmViewer.State;
 
+			// 固定ボタンは個別登録し、動的に再生成するツリー項目はコンテナへのイベント委譲で処理する。
 			document.getElementById('refreshBtn').addEventListener('click', () => UI.renderTree(true));
 			document.getElementById('expandAll').addEventListener('click', UI.expandAll);
 			document.getElementById('collapseAll').addEventListener('click', UI.collapseAll);
@@ -739,6 +761,7 @@ const TmViewer = {
 			});
 
 			window.addEventListener('pageshow', () => {
+				// 戻る・進むキャッシュから復帰した場合も、ブラウザが復元したラジオ状態を取り込む。
 				UI.deferModeSyncUntilStable();
 			});
 
@@ -768,7 +791,8 @@ const TmViewer = {
 					}
 
 					// --- プログレスバーを更新 ---
-					// 各ステージの完了度合いに応じて、バーの進捗をマッピングします
+					// 所要時間の大半を占めるタブ作成へ0～80%を割り当て、
+					// 残りの固定ステージを85～100%へ段階的にマッピングする。
 					let barPercentage = 0;
 					if (stage === 1) {
 						// 第1段階は最も時間がかかるため、バーの0% -> 80% を割り当てる
