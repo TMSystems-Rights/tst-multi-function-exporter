@@ -126,13 +126,16 @@ const TmBackground = {
 					throw new Error('TSTから有効なツリー構造（配列）を取得できませんでした。');
 				}
 
-				// ツリー構造からエクスポート用データを作成
+				// TST 4.4.6以降は、TSTの特別権限を与えていない外部アドオンに対して
+				// title・url等の詳細情報が伏せられます。Firefox自身のtabs APIで取得した
+				// 詳細をタブIDで補完し、TSTからはツリー構造だけを利用します。
+				const windowTabs   = await browser.tabs.query({ windowId });
+				const enrichedTree = TmBackground.Helpers.enrichTreeWithBrowserTabs(tree, windowTabs);
 				const viewerUrl    = browser.runtime.getURL('viewer/viewer.html');
-				const filteredTree = TmBackground.Helpers.filterTree(tree, (tab) => tab.url !== viewerUrl);
+				const filteredTree = TmBackground.Helpers.filterTree(enrichedTree, (tab) => tab.url !== viewerUrl);
 				const outputData   = TmBackground.Helpers.convertTreeForJSON(filteredTree);
 
 				if (message.type === 'get-viewer-data') {
-					const windowTabs    = await browser.tabs.query({ windowId });
 					const expectedCount = windowTabs.filter((tab) => {
 						const url = tab.url || tab.pendingUrl || '';
 						return url !== viewerUrl;
@@ -141,7 +144,22 @@ const TmBackground = {
 
 					if (treeTabCount < expectedCount) {
 						console.log(`[get-viewer-data] TST tree not ready: ${treeTabCount}/${expectedCount} tabs`);
-						return { ready: false, error: `TST tree not ready (${treeTabCount}/${expectedCount})` };
+						return {
+							ready: false,
+							reason: 'tree-count-mismatch',
+							treeTabCount,
+							expectedCount,
+							error: `TST tree not ready (${treeTabCount}/${expectedCount})`
+						};
+					}
+					const unresolvedNode = TmBackground.Helpers.findUnresolvedTitleNode(filteredTree);
+					if (unresolvedNode) {
+						return {
+							ready: false,
+							reason: 'title-unresolved',
+							nodeId: String(unresolvedNode.id),
+							error: `TST tree item ${unresolvedNode.id} has no title`
+						};
 					}
 					return { ready: true, tree: outputData };
 				}
@@ -606,7 +624,65 @@ const TmBackground = {
 		},
 
 		/**
-		 * ツリー構造を再帰的にフィルタリングする
+		 * TSTツリーへFirefoxのtabs APIから取得した詳細情報をタブIDで補完します。
+		 * TST 4.4.6以降にTST側の特別権限なしで取得したツリーでは、タイトルやURLが
+		 * 含まれないため、TST固有の親子関係・状態を維持したまま補います。
+		 * @param {Array<object>} nodes - TSTから取得したツリーのノード配列。
+		 * @param {Array<browser.tabs.Tab>} browserTabs - Firefoxから取得した同一ウィンドウのタブ一覧。
+		 * @returns {Array<object>} 詳細情報を補完した新しいツリーのノード配列。
+		 */
+		enrichTreeWithBrowserTabs: function (nodes, browserTabs) {
+			// TSTの応答ではtab IDが文字列になる場合があるため、Firefox API側と同じ
+			// 形式へ正規化して照合する。Mapの数値キーと文字列キーは一致しない。
+			const tabsById   = new Map(browserTabs.map(tab => [String(tab.id), tab]));
+			const enrichNode = (tstNode) => {
+				const browserTab   = tabsById.get(String(tstNode.id));
+				const enrichedNode = {
+					...tstNode
+				};
+
+				if (browserTab) {
+					enrichedNode.index         = browserTab.index;
+					enrichedNode.url           = browserTab.url || browserTab.pendingUrl || tstNode.url;
+					enrichedNode.title         = browserTab.title || tstNode.title;
+					enrichedNode.favIconUrl    = browserTab.favIconUrl || tstNode.favIconUrl;
+					enrichedNode.pinned        = browserTab.pinned;
+					enrichedNode.discarded     = browserTab.discarded;
+					enrichedNode.hidden        = browserTab.hidden;
+					enrichedNode.cookieStoreId = browserTab.cookieStoreId;
+					enrichedNode.active        = browserTab.active;
+				}
+
+				if (tstNode.children) {
+					enrichedNode.children = tstNode.children.map(child => enrichNode(child));
+				}
+				return enrichedNode;
+			};
+			return nodes.map(rootNode => enrichNode(rootNode));
+		},
+
+		/**
+		 * 表示できるタイトルをまだ持たないツリーノードを深さ優先で返します。
+		 * @param {Array<object>} nodes - 検査対象のツリーノード配列。
+		 * @returns {object|null} 未解決のノード。すべて解決済みの場合はnull。
+		 */
+		findUnresolvedTitleNode: function (nodes) {
+			for (const node of nodes) {
+				// Firefoxは破棄済みタブのタイトルにURLそのものを返す場合がある。
+				// URLと同一であっても有効なタイトル値であり、未取得として扱わない。
+				if (!node.title) {
+					return node;
+				}
+				const unresolvedChild = node.children && this.findUnresolvedTitleNode(node.children);
+				if (unresolvedChild) {
+					return unresolvedChild;
+				}
+			}
+			return null;
+		},
+
+		/**
+		 * ツリー構造を再帰的にフィルタリングします。
 		 * @param {Array} nodes - タブのノード配列
 		 * @param {Function} predicate - trueを返したノードを維持する関数
 		 * @returns {Array} - フィルタリングされた新しいノード配列
@@ -616,10 +692,8 @@ const TmBackground = {
 			for (const node of nodes) {
 				if (predicate(node)) {
 					const newNode = { ...node }; // 元のオブジェクトを変更しないようにコピーを作成
-					// 子要素も再帰的にフィルタリング
-					if (newNode.children) {
-						// 新しいオブジェクトを作成して、元のtreeオブジェクトを変更しないようにする
-						newNode.children = this.filterTree(newNode.children, predicate);
+					if (node.children) {
+						newNode.children = this.filterTree(node.children, predicate);
 					}
 					result.push(newNode);
 				}

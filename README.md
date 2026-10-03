@@ -32,6 +32,15 @@ A new feature (version 2.2.0) has been added to the viewer screen: "Sort Edit Mo
 
 ---
 
+## 動作要件
+
+- [Tree Style Tab](https://addons.mozilla.org/firefox/addon/tree-style-tab/) がインストールされていること。
+- Tree Style Tab の設定で **「他の拡張機能向けのAPIを有効にする」** を有効にすること。
+
+本拡張機能は、TST API からツリー構造を取得し、Firefox の `tabs` API からタイトル、URL、favicon、ピン留め状態、コンテナ ID などのタブ詳細情報を取得して結合します。これにより、TST が外部拡張機能への詳細情報を制限する場合でも、対象となる Firefox の実タブを JSON／TSV 出力およびライブビューアで扱います。
+
+---
+
 ## 主な機能 (Features)
 
 この拡張機能は、Firefoxブラウザ用拡張機能です。<br>
@@ -49,6 +58,7 @@ A new feature (version 2.2.0) has been added to the viewer screen: "Sort Edit Mo
           
 -   **インタラクティブ・ライブビューア (Interactive Live Viewer)**
     -   現在のタブの状態を、開閉可能なツリー形式でリアルタイムに表示します。
+	-   TST のツリー構造と Firefox のタブ詳細情報を結合して表示するため、TST の外部アドオン向け詳細情報が制限されている環境でも、対象タブを表示・操作できます。
     -   ビューアから直接、目的のタブに**ジャンプ**できます。
     -   ビューア上でタブを**削除**でき、TST本体の表示も即座に更新されます。
     -   各タブの**ファビコン**も完璧に再現します。

@@ -58,6 +58,22 @@
 	"viewerLoading": {
 		"message": "Loading latest tab information..."
 	},
+	"viewerTreeStatusCountMismatch": {
+		"message": "Checking TST tree: $1 / $2 tabs retrieved",
+		"placeholders": {
+			"tree_tab_count": { "content": "$1" },
+			"expected_count": { "content": "$2" }
+		}
+	},
+	"viewerTreeStatusTitlePending": {
+		"message": "Checking TST tree: node without a title (ID: $1)",
+		"placeholders": {
+			"node_id": { "content": "$1" }
+		}
+	},
+	"viewerTreeStatusUnavailable": {
+		"message": "Waiting for the TST tree result"
+	},
 	"viewerRefreshButton": {
 		"message": "Refresh"
 	},
@@ -79,6 +95,12 @@
 	},
 	"errorViewerTreeTimeout": {
 		"message": "Tree Style Tab is not responding, or the tab tree is still being built. Please wait a moment and reload this page with the F5 key."
+	},
+	"errorViewerTreeTimeoutDetail": {
+		"message": "Tree Style Tab is not responding, or the tab tree is still being built. Please wait a moment and reload this page with the F5 key. Last status: $1",
+		"placeholders": {
+			"detail": { "content": "$1" }
+		}
 	},
 	"popupRestoreButton": {
 		"message": "Restore from JSON"

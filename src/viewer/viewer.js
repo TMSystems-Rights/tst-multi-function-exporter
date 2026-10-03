@@ -265,26 +265,40 @@ const TmViewer = {
 		 */
 		fetchViewerTreeWithRetry: async function () {
 			const deadline = Date.now() + TmViewer.Const.treePollMaxWaitMs;
+			let lastDetail = '';
 
 			while (Date.now() < deadline) {
 				const response = await browser.runtime.sendMessage({ type: 'get-viewer-data' });
 
 				if (response?.ready && Array.isArray(response.tree)) {
-					const hasUnresolvedTitles = response.tree.some(
-						node => !node.title || node.title === node.url
-					);
-					if (!hasUnresolvedTitles) {
-						return response.tree;
-					}
-					console.log('未解決のタイトルを検出しました。再取得を試みます...');
+					return response.tree;
 				} else {
+					if (response?.reason === 'tree-count-mismatch') {
+						lastDetail = TmCommon.Funcs.GetMsg('viewerTreeStatusCountMismatch', [
+							String(response.treeTabCount),
+							String(response.expectedCount)
+						]);
+					} else if (response?.reason === 'title-unresolved') {
+						lastDetail = TmCommon.Funcs.GetMsg('viewerTreeStatusTitlePending', [response.nodeId]);
+					} else {
+						lastDetail = response?.error || TmCommon.Funcs.GetMsg('viewerTreeStatusUnavailable');
+					}
 					console.log('ツリーデータを取得できませんでした。再取得を試みます...', response);
 				}
+				this.setTreeLoadingDetail(lastDetail);
 
 				await new Promise(resolve => setTimeout(resolve, TmViewer.Const.treePollIntervalMs));
 			}
 
-			throw new Error(TmCommon.Funcs.GetMsg('errorViewerTreeTimeout'));
+			throw new Error(TmCommon.Funcs.GetMsg('errorViewerTreeTimeoutDetail', lastDetail));
+		},
+
+		/**
+		 * 読み込み中の画面へ、直近のTSTツリー待機理由を表示します。
+		 * @param {string} detail - 待機理由の表示文字列。
+		 */
+		setTreeLoadingDetail: function (detail) {
+			TmViewer.Elements.loadingText.textContent = `${TmCommon.Funcs.GetMsg('viewerLoading')} ${detail}`;
 		},
 
 		/**
@@ -317,7 +331,7 @@ const TmViewer = {
 				this.setLoadingState(false);
 			} catch (error) {
 				console.error('renderTreeでエラー:', error);
-				const errorMessage        = error.message === TmCommon.Funcs.GetMsg('errorViewerTreeTimeout')
+				const errorMessage        = error.message.startsWith(TmCommon.Funcs.GetMsg('errorViewerTreeTimeout'))
 					? error.message
 					: TmCommon.Funcs.GetMsg("errorGeneric", error.message);
 				E.treeContainer.innerHTML = `<p>${errorMessage}</p>`;

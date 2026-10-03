@@ -58,6 +58,22 @@
 	"viewerLoading": {
 		"message": "最新のタブ情報を取得中..."
 	},
+	"viewerTreeStatusCountMismatch": {
+		"message": "TSTツリーを確認中: $1 / $2 タブを取得済み",
+		"placeholders": {
+			"tree_tab_count": { "content": "$1" },
+			"expected_count": { "content": "$2" }
+		}
+	},
+	"viewerTreeStatusTitlePending": {
+		"message": "TSTツリーを確認中: タイトル未取得のノード (ID: $1)",
+		"placeholders": {
+			"node_id": { "content": "$1" }
+		}
+	},
+	"viewerTreeStatusUnavailable": {
+		"message": "TSTツリーの取得結果を待機中"
+	},
 	"viewerRefreshButton": {
 		"message": "更新"
 	},
@@ -79,6 +95,12 @@
 	},
 	"errorViewerTreeTimeout": {
 		"message": "Tree Style Tabが応答していないか、タブツリーの構築に時間がかかっています。しばらく待ってF5キーでリロードしてみてください。"
+	},
+	"errorViewerTreeTimeoutDetail": {
+		"message": "Tree Style Tabが応答していないか、タブツリーの構築に時間がかかっています。しばらく待ってF5キーでリロードしてみてください。 最後の状態: $1",
+		"placeholders": {
+			"detail": { "content": "$1" }
+		}
 	},
 	"popupRestoreButton": {
 		"message": "JSONから復元"
