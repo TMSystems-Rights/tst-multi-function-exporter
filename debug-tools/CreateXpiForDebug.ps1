@@ -54,8 +54,7 @@ function Test-XpiDeployReady {
 			)
 			$stream.Close()
 			$stream.Dispose()
-		}
-		catch {
+		} catch {
 			Write-Error @"
 xpi を上書きできません（ファイルがロックされています）。
 FDE / Firefox を完全終了してから再実行してください。
@@ -63,8 +62,7 @@ xpi: $XpiPath
 "@
 			return $false
 		}
-	}
-	else {
+	} else {
 		# xpi が未配置の場合: extensions フォルダへの書き込み可否を probe ファイルで確認
 		try {
 			$probePath = Join-Path $extensionsDir (".write-probe-{0}" -f [guid]::NewGuid())
@@ -72,8 +70,7 @@ xpi: $XpiPath
 			$probe.Close()
 			$probe.Dispose()
 			Remove-Item -LiteralPath $probePath -Force
-		}
-		catch {
+		} catch {
 			Write-Error @"
 extensions フォルダに書き込めません。
 FDE / Firefox を完全終了してから再実行してください。
@@ -207,8 +204,7 @@ try {
 	Write-Host "バージョン '${Version}' の xpi を配置します。"
 	Copy-Item -LiteralPath $ZipPath -Destination $XpiPath -Force
 	Write-Host "OK: $XpiPath"
-}
-finally {
+} finally {
 	Pop-Location
 }
 
