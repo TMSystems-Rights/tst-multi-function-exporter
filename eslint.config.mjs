@@ -3,7 +3,7 @@ import js from '@eslint/js';
 // ★★★ JSDocプラグインをインポート ★★★
 import jsdoc from 'eslint-plugin-jsdoc';
 // ★★★ 変数代入の"="の位置を揃えることができる ★★★
-import alignAssignments from 'eslint-plugin-align-assignments';
+import alignAssignments from '@tms/eslint-plugin-align-assignments';
 
 export default [
 	// =========================================================================
@@ -145,4 +145,3 @@ export default [
 		}
 	}
 ];
-

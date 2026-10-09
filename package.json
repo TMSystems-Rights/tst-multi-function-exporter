@@ -19,8 +19,8 @@
 	"homepage": "https://github.com/TMSystems-Rights/tst-multi-function-exporter#readme",
 	"devDependencies": {
 		"@eslint/js": "^9.31.0",
+		"@tms/eslint-plugin-align-assignments": "https://github.com/TMSystems-Rights/tms-eslint-plugin-align-assignments/releases/download/v1.0.1/tms-eslint-plugin-align-assignments-1.0.1.tgz",
 		"eslint": "^9.31.0",
-		"eslint-plugin-align-assignments": "^1.1.2",
 		"eslint-plugin-jsdoc": "^51.4.1",
 		"globals": "^16.3.0"
 	}
