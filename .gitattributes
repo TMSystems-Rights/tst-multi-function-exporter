@@ -1,0 +1,6 @@
+# Windows環境の作業ツリーでは、テキストファイルをCRLFへ統一する。
+* text=auto eol=crlf
+
+# シェルスクリプトは実行互換性のためLFを維持する。
+*.sh text eol=lf
+*.bash text eol=lf
